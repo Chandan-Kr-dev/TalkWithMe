@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useChatStore } from "@/store/chatStore";
 import toast, { Toaster } from "react-hot-toast";
-import { FiEye, FiEyeOff, FiMessageCircle } from "react-icons/fi";
+import { FiEye, FiEyeOff, FiMessageCircle, FiCamera, FiX } from "react-icons/fi";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,6 +14,35 @@ export default function AuthPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only JPEG, PNG, WebP, and GIF images are allowed");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+
+    setAvatarFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setAvatarPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const removeAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const router = useRouter();
   const setUser = useChatStore((state) => state.setUser);
@@ -30,10 +59,27 @@ export default function AuthPage() {
           return;
         }
 
+        // Upload avatar if selected
+        let avatarUrl: string | undefined;
+        if (avatarFile) {
+          const formData = new FormData();
+          formData.append("avatar", avatarFile);
+          const uploadRes = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+          const uploadData = await uploadRes.json();
+          if (uploadRes.ok) {
+            avatarUrl = uploadData.url;
+          } else {
+            toast.error(uploadData.message || "Avatar upload failed");
+          }
+        }
+
         const res = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password }),
+          body: JSON.stringify({ name, email, password, avatar: avatarUrl }),
         });
 
         const data = await res.json();
@@ -106,17 +152,60 @@ export default function AuthPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-1.5">Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
-                  placeholder="Enter your name"
-                  required
-                />
-              </div>
+              <>
+                {/* Avatar Upload */}
+                <div className="flex flex-col items-center">
+                  <div className="relative group">
+                    {avatarPreview ? (
+                      <img
+                        src={avatarPreview}
+                        alt="Avatar preview"
+                        className="w-20 h-20 rounded-full object-cover ring-2 ring-white/30"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-white/10 border-2 border-dashed border-white/30 flex items-center justify-center">
+                        <FiCamera size={24} className="text-white/50" />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                    >
+                      <FiCamera size={20} className="text-white" />
+                    </button>
+                    {avatarPreview && (
+                      <button
+                        type="button"
+                        onClick={removeAvatar}
+                        className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center shadow-lg"
+                      >
+                        <FiX size={12} className="text-white" />
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-white/50 mt-2">Upload avatar (optional)</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleAvatarSelect}
+                    className="hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white/80 mb-1.5">Name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                    placeholder="Enter your name"
+                    required
+                  />
+                </div>
+              </>
             )}
 
             <div>

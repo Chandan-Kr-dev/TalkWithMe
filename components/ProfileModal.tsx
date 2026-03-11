@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useChatStore } from "@/store/chatStore";
-import { FiX, FiEdit2, FiMail, FiClock } from "react-icons/fi";
+import { FiX, FiEdit2, FiMail, FiClock, FiCamera } from "react-icons/fi";
 import toast from "react-hot-toast";
 
 interface ProfileModalProps {
@@ -15,6 +15,63 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
   const [name, setName] = useState(user?.name || "");
   const [about, setAbout] = useState(user?.about || "");
   const [loading, setLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate on client side too
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only JPEG, PNG, WebP, and GIF images are allowed");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      // Upload the file
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(uploadData.message);
+
+      // Update user profile with new avatar URL
+      const updateRes = await fetch("/api/user", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user?.token}`,
+        },
+        body: JSON.stringify({ avatar: uploadData.url }),
+      });
+
+      const updateData = await updateRes.json();
+      if (updateRes.ok && user) {
+        setUser({ ...user, avatar: updateData.avatar });
+        toast.success("Avatar updated!");
+      } else {
+        throw new Error("Failed to save avatar");
+      }
+    } catch {
+      toast.error("Failed to upload avatar");
+    } finally {
+      setUploadingAvatar(false);
+      // Reset file input so the same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const handleUpdateProfile = async () => {
     if (!name.trim()) {
@@ -60,11 +117,35 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
         <div className="p-6 space-y-5">
           {/* Avatar */}
           <div className="flex flex-col items-center">
-            <img
-              src={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=default`}
-              alt="Profile"
-              className="w-24 h-24 rounded-full ring-4 ring-purple-100 mb-3"
-            />
+            <div className="relative group">
+              <img
+                src={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=default`}
+                alt="Profile"
+                className="w-24 h-24 rounded-full ring-4 ring-purple-100 object-cover"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+              >
+                {uploadingAvatar ? (
+                  <svg className="animate-spin h-6 w-6 text-white" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : (
+                  <FiCamera size={22} className="text-white" />
+                )}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-2 mb-1">Hover avatar to change</p>
             {isEditing ? (
               <div className="w-full space-y-3 mt-2">
                 <div>
