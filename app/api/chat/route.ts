@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Chat from "@/models/Chat";
 import User from "@/models/User";
+import "@/models/Message";
 import { getAuthUser } from "@/lib/getAuthUser";
 
 // GET /api/chat - Fetch all chats for the logged-in user
@@ -17,15 +18,13 @@ export async function GET(req: NextRequest) {
     const chats = await Chat.find({ users: { $elemMatch: { $eq: user._id } } })
       .populate("users", "-password")
       .populate("groupAdmin", "-password")
-      .populate("latestMessage")
+      .populate({
+        path: "latestMessage",
+        populate: { path: "sender", select: "name avatar email" },
+      })
       .sort({ updatedAt: -1 });
 
-    const populatedChats = await User.populate(chats, {
-      path: "latestMessage.sender",
-      select: "name avatar email",
-    });
-
-    return NextResponse.json(populatedChats);
+    return NextResponse.json(chats);
   } catch (error) {
     console.error("Fetch chats error:", error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
@@ -48,23 +47,18 @@ export async function POST(req: NextRequest) {
     await connectDB();
 
     // Check if chat already exists
-    let existingChat = await Chat.find({
+    const existingChat = await Chat.findOne({
       isGroupChat: false,
-      $and: [
-        { users: { $elemMatch: { $eq: user._id } } },
-        { users: { $elemMatch: { $eq: userId } } },
-      ],
+      users: { $all: [user._id, userId] },
     })
       .populate("users", "-password")
-      .populate("latestMessage");
+      .populate({
+        path: "latestMessage",
+        populate: { path: "sender", select: "name avatar email" },
+      });
 
-    const populatedChat = await User.populate(existingChat, {
-      path: "latestMessage.sender",
-      select: "name avatar email",
-    });
-
-    if (populatedChat.length > 0) {
-      return NextResponse.json(populatedChat[0]);
+    if (existingChat) {
+      return NextResponse.json(existingChat);
     }
 
     // Create new chat
