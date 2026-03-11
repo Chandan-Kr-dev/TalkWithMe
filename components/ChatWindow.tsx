@@ -306,7 +306,7 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
                           {msg.sender.name}
                         </p>
                       )}
-                      <p className="text-sm leading-relaxed wrap-break-word">{msg.content}</p>
+                      <p className="text-sm leading-relaxed break-all">{msg.content}</p>
                       <p
                         className={`text-[10px] mt-1 ${
                           isMe ? "text-white/70" : "text-gray-400"

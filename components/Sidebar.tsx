@@ -131,7 +131,7 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
 
   return (
     <>
-      <div className="w-full md:w-[380px] bg-white border-r border-gray-200 flex flex-col h-full">
+      <div className="w-full md:w-95 bg-white border-r border-gray-200 flex flex-col h-full">
         {/* Header */}
         <div className="px-4 py-3 bg-white border-b border-gray-100">
           <div className="flex items-center justify-between mb-3">
