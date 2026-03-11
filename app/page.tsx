@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useChatStore } from "@/store/chatStore";
 import toast, { Toaster } from "react-hot-toast";
-import { FiEye, FiEyeOff, FiMessageCircle, FiCamera, FiX } from "react-icons/fi";
+import { FiEye, FiEyeOff, FiMessageCircle, FiCamera, FiX, FiShield } from "react-icons/fi";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -16,7 +16,12 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [showOtpScreen, setShowOtpScreen] = useState(false);
+  const [verifyEmail, setVerifyEmail] = useState("");
+  const [otp, setOtp] = useState(["" , "", "", "", "", ""]);
+  const [verifying, setVerifying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -85,9 +90,10 @@ export default function AuthPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
 
-        setUser(data);
-        toast.success("Account created successfully!");
-        router.push("/chat");
+        // Show OTP verification screen
+        setVerifyEmail(data.email || email);
+        setShowOtpScreen(true);
+        toast.success(data.message);
       } else {
         const res = await fetch("/api/auth/login", {
           method: "POST",
@@ -96,7 +102,16 @@ export default function AuthPage() {
         });
 
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message);
+        if (!res.ok) {
+          // If email not verified, show OTP screen
+          if (res.status === 403 && data.needsVerification) {
+            setVerifyEmail(data.email || email);
+            setShowOtpScreen(true);
+            toast.success(data.message);
+            return;
+          }
+          throw new Error(data.message);
+        }
 
         setUser(data);
         toast.success("Logged in successfully!");
@@ -129,6 +144,130 @@ export default function AuthPage() {
         </div>
 
         {/* Auth Card */}
+        {showOtpScreen ? (
+          <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 text-center">
+            <div className="w-20 h-20 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto mb-4">
+              <FiShield size={36} className="text-purple-300" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">Enter verification code</h2>
+            <p className="text-white/60 text-sm mb-1">
+              We&apos;ve sent a 6-digit code to
+            </p>
+            <p className="text-purple-300 font-semibold text-sm mb-6">{verifyEmail}</p>
+
+            {/* OTP Input Boxes */}
+            <div className="flex justify-center gap-2 mb-6">
+              {otp.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={(el) => { otpRefs.current[i] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/, "");
+                    const newOtp = [...otp];
+                    newOtp[i] = val;
+                    setOtp(newOtp);
+                    if (val && i < 5) otpRefs.current[i + 1]?.focus();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Backspace" && !otp[i] && i > 0) {
+                      otpRefs.current[i - 1]?.focus();
+                    }
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+                    if (pasted.length === 6) {
+                      const newOtp = pasted.split("");
+                      setOtp(newOtp);
+                      otpRefs.current[5]?.focus();
+                    }
+                  }}
+                  className="w-12 h-14 text-center text-xl font-bold rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                />
+              ))}
+            </div>
+
+            <p className="text-white/40 text-xs mb-6">Code expires in 10 minutes</p>
+
+            <div className="space-y-3">
+              <button
+                onClick={async () => {
+                  const code = otp.join("");
+                  if (code.length !== 6) {
+                    toast.error("Please enter the complete 6-digit code");
+                    return;
+                  }
+                  setVerifying(true);
+                  try {
+                    const res = await fetch("/api/auth/verify-email", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ email: verifyEmail, otp: code }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      toast.success("Email verified! You can now log in.");
+                      setShowOtpScreen(false);
+                      setIsLogin(true);
+                      setOtp(["", "", "", "", "", ""]);
+                    } else {
+                      toast.error(data.message);
+                    }
+                  } catch {
+                    toast.error("Verification failed. Try again.");
+                  } finally {
+                    setVerifying(false);
+                  }
+                }}
+                disabled={verifying}
+                className="w-full py-3 rounded-xl bg-linear-to-r from-purple-500 to-pink-500 text-white font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg disabled:opacity-50"
+              >
+                {verifying ? "Verifying..." : "Verify Email"}
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    setLoading(true);
+                    const res = await fetch("/api/auth/register", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ name, email, password }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      toast.success("New OTP sent!");
+                      setOtp(["", "", "", "", "", ""]);
+                      otpRefs.current[0]?.focus();
+                    } else {
+                      toast.error(data.message);
+                    }
+                  } catch {
+                    toast.error("Failed to resend OTP");
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="w-full py-3 rounded-xl bg-white/10 border border-white/20 text-white font-medium hover:bg-white/20 transition-all duration-300 disabled:opacity-50"
+              >
+                {loading ? "Sending..." : "Resend OTP"}
+              </button>
+              <button
+                onClick={() => {
+                  setShowOtpScreen(false);
+                  setOtp(["", "", "", "", "", ""]);
+                }}
+                className="text-white/50 text-sm hover:text-white/80 transition-colors"
+              >
+                ← Back to Sign Up
+              </button>
+            </div>
+          </div>
+        ) : (
         <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
           {/* Tab Switcher */}
           <div className="flex bg-white/10 rounded-xl p-1 mb-6">
@@ -289,6 +428,7 @@ export default function AuthPage() {
             </button>
           )}
         </div>
+        )}
       </div>
     </div>
   );

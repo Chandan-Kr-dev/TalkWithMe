@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomInt } from "crypto";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
 import { generateToken } from "@/lib/auth";
+import { sendVerificationOTP } from "@/lib/mailer";
 
 // POST /api/auth/login
 export async function POST(req: NextRequest) {
@@ -22,6 +24,25 @@ export async function POST(req: NextRequest) {
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
+    }
+
+    if (!user.isVerified) {
+      // Send a fresh OTP so user can verify right now
+      const otp = randomInt(100000, 999999).toString();
+      user.verificationToken = otp;
+      user.verificationTokenExpiry = new Date(Date.now() + 10 * 60 * 1000);
+      await user.save();
+
+      await sendVerificationOTP(user.email, user.name, otp);
+
+      return NextResponse.json(
+        {
+          message: "Your email is not verified. We've sent a new verification code.",
+          needsVerification: true,
+          email: user.email,
+        },
+        { status: 403 }
+      );
     }
 
     // Update online status

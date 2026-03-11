@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomInt } from "crypto";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
-import { generateToken } from "@/lib/auth";
+import { sendVerificationOTP } from "@/lib/mailer";
+
+function generateOTP(): string {
+  return randomInt(100000, 999999).toString();
+}
 
 // POST /api/auth/register
 export async function POST(req: NextRequest) {
@@ -16,26 +21,42 @@ export async function POST(req: NextRequest) {
 
     const userExists = await User.findOne({ email });
     if (userExists) {
+      // If existing user hasn't verified, allow re-sending the OTP
+      if (!userExists.isVerified) {
+        const otp = generateOTP();
+        userExists.verificationToken = otp;
+        userExists.verificationTokenExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        await userExists.save();
+
+        await sendVerificationOTP(email, userExists.name, otp);
+
+        return NextResponse.json(
+          { message: "A new OTP has been sent to your email.", email },
+          { status: 200 }
+        );
+      }
       return NextResponse.json({ message: "User already exists" }, { status: 400 });
     }
+
+    // Generate 6-digit OTP (10 min expiry)
+    const otp = generateOTP();
 
     const user = await User.create({
       name,
       email,
       password,
       avatar: avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
+      verificationToken: otp,
+      verificationTokenExpiry: new Date(Date.now() + 10 * 60 * 1000),
     });
 
-    const token = generateToken(user._id.toString());
+    // Send OTP email
+    await sendVerificationOTP(email, name, otp);
 
     return NextResponse.json(
       {
-        _id: user._id,
-        name: user.name,
+        message: "Account created! Enter the OTP sent to your email.",
         email: user.email,
-        avatar: user.avatar,
-        about: user.about,
-        token,
       },
       { status: 201 }
     );

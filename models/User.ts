@@ -9,6 +9,9 @@ export interface IUser extends Document {
   avatar: string;
   about: string;
   isOnline: boolean;
+  isVerified: boolean;
+  verificationToken: string | null;
+  verificationTokenExpiry: Date | null;
   lastSeen: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -26,6 +29,9 @@ const userSchema = new Schema<IUser>(
     },
     about: { type: String, default: "Hey there! I'm using TalkWithMe" },
     isOnline: { type: Boolean, default: false },
+    isVerified: { type: Boolean, default: false },
+    verificationToken: { type: String, default: null },
+    verificationTokenExpiry: { type: Date, default: null },
     lastSeen: { type: Date, default: Date.now },
   },
   { timestamps: true }
