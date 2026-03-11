@@ -1,0 +1,86 @@
+import { NextRequest, NextResponse } from "next/server";
+import connectDB from "@/lib/db";
+import Chat from "@/models/Chat";
+import User from "@/models/User";
+import { getAuthUser } from "@/lib/getAuthUser";
+
+// GET /api/chat - Fetch all chats for the logged-in user
+export async function GET(req: NextRequest) {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ message: "Not authorized" }, { status: 401 });
+    }
+
+    await connectDB();
+
+    const chats = await Chat.find({ users: { $elemMatch: { $eq: user._id } } })
+      .populate("users", "-password")
+      .populate("groupAdmin", "-password")
+      .populate("latestMessage")
+      .sort({ updatedAt: -1 });
+
+    const populatedChats = await User.populate(chats, {
+      path: "latestMessage.sender",
+      select: "name avatar email",
+    });
+
+    return NextResponse.json(populatedChats);
+  } catch (error) {
+    console.error("Fetch chats error:", error);
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
+  }
+}
+
+// POST /api/chat - Create or access a one-on-one chat
+export async function POST(req: NextRequest) {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ message: "Not authorized" }, { status: 401 });
+    }
+
+    const { userId } = await req.json();
+    if (!userId) {
+      return NextResponse.json({ message: "userId param required" }, { status: 400 });
+    }
+
+    await connectDB();
+
+    // Check if chat already exists
+    let existingChat = await Chat.find({
+      isGroupChat: false,
+      $and: [
+        { users: { $elemMatch: { $eq: user._id } } },
+        { users: { $elemMatch: { $eq: userId } } },
+      ],
+    })
+      .populate("users", "-password")
+      .populate("latestMessage");
+
+    const populatedChat = await User.populate(existingChat, {
+      path: "latestMessage.sender",
+      select: "name avatar email",
+    });
+
+    if (populatedChat.length > 0) {
+      return NextResponse.json(populatedChat[0]);
+    }
+
+    // Create new chat
+    const otherUser = await User.findById(userId);
+    const chatData = {
+      chatName: otherUser?.name || "Chat",
+      isGroupChat: false,
+      users: [user._id, userId],
+    };
+
+    const createdChat = await Chat.create(chatData);
+    const fullChat = await Chat.findById(createdChat._id).populate("users", "-password");
+
+    return NextResponse.json(fullChat, { status: 201 });
+  } catch (error) {
+    console.error("Create chat error:", error);
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
+  }
+}
