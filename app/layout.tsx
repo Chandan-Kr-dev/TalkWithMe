@@ -16,6 +16,12 @@ export const metadata: Metadata = {
     shortcut: "/logo.png",
     apple: "/logo.png",
   },
+  openGraph: {
+    title: "Talk With Me",
+    description: "Chat instantly with friends",
+    url: "https://talk-withme.vercel.app",
+    siteName: "Talk With Me",
+  },
 };
 
 export default function RootLayout({
