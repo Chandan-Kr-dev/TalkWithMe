@@ -9,6 +9,10 @@ import {
   FiMoreVertical,
   FiUsers,
   FiInfo,
+  FiPaperclip,
+  FiX,
+  FiFile,
+  FiDownload,
 } from "react-icons/fi";
 import { Socket } from "socket.io-client";
 import toast from "react-hot-toast";
@@ -32,8 +36,12 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
   const [showEmoji, setShowEmoji] = useState(false);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -94,9 +102,15 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !user || !selectedChat) return;
+    if ((!newMessage.trim() && !selectedFile) || !user || !selectedChat) return;
 
     socket?.emit("stop-typing", selectedChat._id);
+
+    // If there's a file, upload it first
+    if (selectedFile) {
+      await handleSendFile();
+      return;
+    }
 
     try {
       const res = await fetch("/api/message", {
@@ -121,6 +135,88 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
     } catch (error) {
       console.error("Send message error:", error);
       toast.error("Failed to send message");
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (25MB max)
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error("File size must be less than 25MB");
+      return;
+    }
+
+    setSelectedFile(file);
+
+    // Generate preview for images and videos
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onloadend = () => setFilePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    } else if (file.type.startsWith("video/")) {
+      setFilePreview("video");
+    } else {
+      setFilePreview("document");
+    }
+  };
+
+  const clearSelectedFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleSendFile = async () => {
+    if (!selectedFile || !user || !selectedChat) return;
+
+    setUploadingFile(true);
+    try {
+      // Upload file to Cloudinary
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("type", "chat");
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(uploadData.message);
+
+      // Send message with file
+      const res = await fetch("/api/message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          content: newMessage || "",
+          chatId: selectedChat._id,
+          fileUrl: uploadData.url,
+          fileType: uploadData.fileType,
+          fileName: uploadData.fileName,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessages((prev) => [...prev, data]);
+        setNewMessage("");
+        clearSelectedFile();
+        setShowEmoji(false);
+
+        socket?.emit("new-message", data);
+        onRefreshChats();
+      }
+    } catch (error) {
+      console.error("Send file error:", error);
+      toast.error("Failed to send file");
+    } finally {
+      setUploadingFile(false);
     }
   };
 
@@ -306,7 +402,43 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
                           {msg.sender.name}
                         </p>
                       )}
-                      <p className="text-sm leading-relaxed break-all">{msg.content}</p>
+                      {/* File attachment */}
+                      {msg.fileUrl && msg.fileType === "image" && (
+                        <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={msg.fileUrl}
+                            alt={msg.fileName || "Image"}
+                            className="rounded-lg max-w-full max-h-60 object-cover mb-1 cursor-pointer hover:opacity-90 transition-opacity"
+                          />
+                        </a>
+                      )}
+                      {msg.fileUrl && msg.fileType === "video" && (
+                        <video
+                          src={msg.fileUrl}
+                          controls
+                          className="rounded-lg max-w-full max-h-60 mb-1"
+                        />
+                      )}
+                      {msg.fileUrl && msg.fileType === "document" && (
+                        <a
+                          href={msg.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg mb-1 transition-colors ${
+                            isMe ? "bg-purple-600 hover:bg-purple-700" : "bg-gray-100 hover:bg-gray-200"
+                          }`}
+                        >
+                          <FiFile size={20} className={isMe ? "text-white" : "text-purple-500"} />
+                          <span className={`text-sm truncate flex-1 ${isMe ? "text-white" : "text-gray-700"}`}>
+                            {msg.fileName || "Document"}
+                          </span>
+                          <FiDownload size={16} className={isMe ? "text-white/70" : "text-gray-400"} />
+                        </a>
+                      )}
+                      {/* Text content (hide default file placeholder if file is present) */}
+                      {msg.content && !(msg.fileUrl && !newMessage && ["📷 Photo", "🎥 Video", "📎 Document"].includes(msg.content)) && (
+                        <p className="text-sm leading-relaxed break-all">{msg.content}</p>
+                      )}
                       <p
                         className={`text-[10px] mt-1 ${
                           isMe ? "text-white/70" : "text-gray-400"
@@ -347,6 +479,35 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
 
       {/* Message Input */}
       <form onSubmit={handleSendMessage} className="px-4 py-3 bg-white border-t border-gray-200">
+        {/* File Preview */}
+        {selectedFile && (
+          <div className="mb-2 p-2 bg-gray-50 rounded-xl flex items-center gap-3">
+            {filePreview && filePreview !== "video" && filePreview !== "document" ? (
+              <img src={filePreview} alt="Preview" className="w-14 h-14 rounded-lg object-cover" />
+            ) : filePreview === "video" ? (
+              <div className="w-14 h-14 rounded-lg bg-purple-100 flex items-center justify-center">
+                <span className="text-2xl">🎥</span>
+              </div>
+            ) : (
+              <div className="w-14 h-14 rounded-lg bg-blue-100 flex items-center justify-center">
+                <FiFile size={24} className="text-blue-500" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-700 truncate">{selectedFile.name}</p>
+              <p className="text-xs text-gray-400">
+                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={clearSelectedFile}
+              className="p-1.5 rounded-full hover:bg-gray-200 transition-colors"
+            >
+              <FiX size={18} className="text-gray-500" />
+            </button>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -355,19 +516,38 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
           >
             <FiSmile size={22} className={showEmoji ? "text-purple-500" : "text-gray-500"} />
           </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            disabled={uploadingFile}
+          >
+            <FiPaperclip size={22} className="text-gray-500" />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept="image/*,video/mp4,video/webm,video/quicktime,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
+            onChange={handleFileSelect}
+          />
           <input
             type="text"
-            placeholder="Type a message..."
+            placeholder={selectedFile ? "Add a caption..." : "Type a message..."}
             value={newMessage}
             onChange={handleTyping}
             className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:bg-white transition-all"
           />
           <button
             type="submit"
-            disabled={!newMessage.trim()}
+            disabled={(!newMessage.trim() && !selectedFile) || uploadingFile}
             className="p-2.5 rounded-full bg-purple-500 text-white hover:bg-purple-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-purple-300"
           >
-            <FiSend size={18} />
+            {uploadingFile ? (
+              <div className="w-[18px] h-[18px] border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <FiSend size={18} />
+            )}
           </button>
         </div>
       </form>

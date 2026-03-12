@@ -41,6 +41,9 @@ export interface MessageData {
   content: string;
   chat: ChatData;
   readBy: string[];
+  fileUrl?: string;
+  fileType?: "image" | "video" | "document";
+  fileName?: string;
   createdAt: string;
 }
 

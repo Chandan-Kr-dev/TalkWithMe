@@ -6,6 +6,9 @@ export interface IMessage extends Document {
   content: string;
   chat: mongoose.Types.ObjectId;
   readBy: mongoose.Types.ObjectId[];
+  fileUrl?: string;
+  fileType?: "image" | "video" | "document";
+  fileName?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -16,6 +19,9 @@ const messageSchema = new Schema<IMessage>(
     content: { type: String, trim: true, required: true },
     chat: { type: Schema.Types.ObjectId, ref: "Chat", required: true },
     readBy: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    fileUrl: { type: String },
+    fileType: { type: String, enum: ["image", "video", "document"] },
+    fileName: { type: String },
   },
   { timestamps: true }
 );

@@ -47,22 +47,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Not authorized" }, { status: 401 });
     }
 
-    const { content, chatId } = await req.json();
-    if (!content || !chatId) {
-      return NextResponse.json({ message: "content and chatId are required" }, { status: 400 });
+    const { content, chatId, fileUrl, fileType, fileName } = await req.json();
+    if ((!content && !fileUrl) || !chatId) {
+      return NextResponse.json({ message: "content or file, and chatId are required" }, { status: 400 });
     }
 
     await connectDB();
 
-    // Encrypt message content before storing in database
-    const encryptedContent = encrypt(content);
+    // Use a default content for file-only messages, then encrypt
+    const messageContent = content || (fileType === "image" ? "📷 Photo" : fileType === "video" ? "🎥 Video" : "📎 Document");
+    const encryptedContent = encrypt(messageContent);
 
-    let message = await Message.create({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const messageData: any = {
       sender: user._id,
       content: encryptedContent,
       chat: chatId,
       readBy: [user._id],
-    });
+    };
+
+    if (fileUrl) {
+      messageData.fileUrl = fileUrl;
+      messageData.fileType = fileType;
+      messageData.fileName = fileName;
+    }
+
+    let message = await Message.create(messageData);
 
     await message.populate("sender", "name avatar email");
     await message.populate("chat");
