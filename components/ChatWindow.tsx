@@ -39,6 +39,7 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -404,13 +405,12 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
                       )}
                       {/* File attachment */}
                       {msg.fileUrl && msg.fileType === "image" && (
-                        <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
-                          <img
-                            src={msg.fileUrl}
-                            alt={msg.fileName || "Image"}
-                            className="rounded-lg max-w-full max-h-60 object-cover mb-1 cursor-pointer hover:opacity-90 transition-opacity"
-                          />
-                        </a>
+                        <img
+                          src={msg.fileUrl}
+                          alt={msg.fileName || "Image"}
+                          onClick={() => setLightboxImage(msg.fileUrl!)}
+                          className="rounded-lg max-w-full max-h-60 object-cover mb-1 cursor-pointer hover:opacity-90 transition-opacity"
+                        />
                       )}
                       {msg.fileUrl && msg.fileType === "video" && (
                         <video
@@ -544,7 +544,7 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
             className="p-2.5 rounded-full bg-purple-500 text-white hover:bg-purple-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-purple-300"
           >
             {uploadingFile ? (
-              <div className="w-[18px] h-[18px] border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="w-4.5 h-4.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <FiSend size={18} />
             )}
@@ -559,6 +559,35 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
           onClose={() => setShowGroupInfo(false)}
           onRefreshChats={onRefreshChats}
         />
+      )}
+
+      {/* Image Lightbox */}
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 z-100 bg-black/90 flex items-center justify-center"
+          onClick={() => setLightboxImage(null)}
+        >
+          <button
+            onClick={() => setLightboxImage(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          >
+            <FiX size={24} className="text-white" />
+          </button>
+          <a
+            href={lightboxImage}
+            download
+            onClick={(e) => e.stopPropagation()}
+            className="absolute top-4 left-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          >
+            <FiDownload size={24} className="text-white" />
+          </a>
+          <img
+            src={lightboxImage}
+            alt="Preview"
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+          />
+        </div>
       )}
     </div>
   );
