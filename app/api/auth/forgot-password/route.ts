@@ -36,16 +36,17 @@ export async function POST(req: NextRequest) {
     // Generate 6-digit OTP (10 min expiry)
     const otp = randomInt(100000, 999999).toString();
 
-    // Use updateOne to avoid triggering pre-save password re-hash
-    await User.updateOne(
+    // Atomic update — verify it actually persisted
+    const updated = await User.findOneAndUpdate(
       { _id: user._id },
-      {
-        $set: {
-          resetToken: otp,
-          resetTokenExpiry: new Date(Date.now() + 10 * 60 * 1000),
-        },
-      }
+      { $set: { resetToken: otp, resetTokenExpiry: new Date(Date.now() + 10 * 60 * 1000) } },
+      { new: true }
     );
+
+    if (!updated || updated.resetToken !== otp) {
+      console.error("Failed to persist reset token for", email);
+      return NextResponse.json({ message: "Failed to generate reset code. Please try again." }, { status: 500 });
+    }
 
     await sendPasswordResetOTP(email, user.name, otp);
 

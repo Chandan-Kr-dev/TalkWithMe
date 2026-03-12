@@ -27,45 +27,40 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const user = await User.findOne({
-      email,
-      resetToken: otp,
-      resetTokenExpiry: { $gt: new Date() },
-    });
-
-    if (!user) {
-      // Check if user exists at all to give a better error
-      const exists = await User.findOne({ email }).select("resetToken resetTokenExpiry");
-      if (!exists) {
-        return NextResponse.json(
-          { message: "No account found with that email" },
-          { status: 404 }
-        );
-      }
-      if (!exists.resetToken) {
-        return NextResponse.json(
-          { message: "No reset code found. Please request a new one." },
-          { status: 400 }
-        );
-      }
-      if (exists.resetTokenExpiry && exists.resetTokenExpiry < new Date()) {
-        return NextResponse.json(
-          { message: "Reset code has expired. Please request a new one." },
-          { status: 400 }
-        );
-      }
+    // First check if user exists and has a valid token
+    const existing = await User.findOne({ email });
+    if (!existing) {
+      return NextResponse.json(
+        { message: "No account found with that email" },
+        { status: 404 }
+      );
+    }
+    if (!existing.resetToken) {
+      return NextResponse.json(
+        { message: "No reset code found. Please request a new one." },
+        { status: 400 }
+      );
+    }
+    if (existing.resetTokenExpiry && existing.resetTokenExpiry < new Date()) {
+      return NextResponse.json(
+        { message: "Reset code has expired. Please request a new one." },
+        { status: 400 }
+      );
+    }
+    if (existing.resetToken !== otp) {
       return NextResponse.json(
         { message: "Invalid reset code. Please check and try again." },
         { status: 400 }
       );
     }
 
-    // Hash password manually and use updateOne to avoid pre-save hook issues
+    // Hash password manually to avoid pre-save hook double-hashing
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    await User.updateOne(
-      { _id: user._id },
+    // Atomic update — set password and clear reset tokens
+    await User.findOneAndUpdate(
+      { _id: existing._id },
       {
         $set: { password: hashedPassword },
         $unset: { resetToken: "", resetTokenExpiry: "" },
