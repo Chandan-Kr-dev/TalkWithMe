@@ -67,6 +67,7 @@ export function initSocket(server: HTTPServer) {
 
     // New message
     socket.on("new-message", (newMessage: {
+      _id: string;
       chat: { _id: string; users: Array<{ _id: string }> };
       sender: { _id: string };
     }) => {
@@ -76,7 +77,33 @@ export function initSocket(server: HTTPServer) {
       chat.users.forEach((user) => {
         if (user._id === newMessage.sender._id) return;
         socket.in(user._id).emit("message-received", newMessage);
+
+        // If the recipient is online, notify sender as delivered
+        const onlineUser = getUser(user._id);
+        if (onlineUser) {
+          io?.to(newMessage.sender._id).emit("message-delivered", {
+            messageId: newMessage._id,
+            chatId: chat._id,
+          });
+        }
       });
+    });
+
+    // Message read — recipient opened the chat
+    socket.on("messages-read", (data: {
+      chatId: string;
+      readerId: string;
+      messageIds: string[];
+      userIds?: string[];
+    }) => {
+      // Emit to chat room
+      io?.in(data.chatId).emit("messages-read", data);
+      // Also emit to each user's personal room for reliability
+      if (data.userIds) {
+        data.userIds.forEach((userId) => {
+          io?.to(userId).emit("messages-read", data);
+        });
+      }
     });
 
     // Notification

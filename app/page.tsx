@@ -1,12 +1,22 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useChatStore } from "@/store/chatStore";
 import toast, { Toaster } from "react-hot-toast";
 import { FiEye, FiEyeOff, FiMessageCircle, FiCamera, FiX, FiShield, FiKey } from "react-icons/fi";
 
 export default function AuthPage() {
+  const router = useRouter();
+  const { user, _hasHydrated } = useChatStore();
+
+  // If already logged in, redirect to chat
+  useEffect(() => {
+    if (_hasHydrated && user?.token) {
+      router.replace("/chat");
+    }
+  }, [_hasHydrated, user, router]);
+
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -57,7 +67,6 @@ export default function AuthPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const router = useRouter();
   const setUser = useChatStore((state) => state.setUser);
 
   const handleSubmit = async (e: React.FormEvent) => {

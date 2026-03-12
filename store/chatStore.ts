@@ -28,6 +28,7 @@ export interface ChatData {
     _id: string;
     content: string;
     sender: { _id: string; name: string; avatar: string };
+    status?: "sent" | "delivered" | "read";
     createdAt: string;
   };
   groupAdmin?: ChatUser;
@@ -41,6 +42,7 @@ export interface MessageData {
   content: string;
   chat: ChatData;
   readBy: string[];
+  status?: "sent" | "delivered" | "read";
   fileUrl?: string;
   fileType?: "image" | "video" | "document";
   fileName?: string;

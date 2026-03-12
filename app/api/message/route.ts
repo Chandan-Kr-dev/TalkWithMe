@@ -29,6 +29,13 @@ export async function GET(req: NextRequest) {
     const decryptedMessages = messages.map((msg) => {
       const msgObj = msg.toObject();
       msgObj.content = decrypt(msgObj.content);
+      // Compute status from readBy for legacy messages without status
+      if (!msgObj.status) {
+        const otherReaders = (msgObj.readBy || []).filter(
+          (id: { toString: () => string }) => id.toString() !== msgObj.sender._id.toString()
+        );
+        msgObj.status = otherReaders.length > 0 ? "read" : "sent";
+      }
       return msgObj;
     });
 

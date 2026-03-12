@@ -14,6 +14,7 @@ import {
   FiSun,
   FiMoon,
   FiSettings,
+  FiCheck,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import GroupChatModal from "./GroupChatModal";
@@ -339,10 +340,33 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                       )}
                     </div>
                     <div className="flex items-center justify-between mt-0.5">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {chat.latestMessage
-                          ? `${chat.isGroupChat ? chat.latestMessage.sender.name + ": " : ""}${chat.latestMessage.content}`
-                          : "No messages yet"}
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-0.5">
+                        {chat.latestMessage ? (
+                          <>
+                            {chat.latestMessage.sender._id === user?._id && (
+                              <span className="inline-flex items-center shrink-0 mr-0.5">
+                                {chat.latestMessage.status === "read" ? (
+                                  <span className="text-blue-500 flex">
+                                    <FiCheck size={11} className="-mr-1.5" strokeWidth={3} />
+                                    <FiCheck size={11} strokeWidth={3} />
+                                  </span>
+                                ) : chat.latestMessage.status === "delivered" ? (
+                                  <span className="text-gray-400 flex">
+                                    <FiCheck size={11} className="-mr-1.5" strokeWidth={3} />
+                                    <FiCheck size={11} strokeWidth={3} />
+                                  </span>
+                                ) : (
+                                  <FiCheck size={11} strokeWidth={3} className="text-gray-400" />
+                                )}
+                              </span>
+                            )}
+                            <span className="truncate">
+                              {chat.isGroupChat ? chat.latestMessage.sender.name + ": " : ""}{chat.latestMessage.content}
+                            </span>
+                          </>
+                        ) : (
+                          "No messages yet"
+                        )}
                       </p>
                       {notifCount > 0 && (
                         <span className="ml-2 shrink-0 w-5 h-5 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center font-bold">

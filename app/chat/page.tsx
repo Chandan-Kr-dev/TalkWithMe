@@ -102,9 +102,21 @@ export default function ChatPage() {
       fetchChats();
     });
 
+    // Listen for read receipts to refresh sidebar ticks
+    socket.on("messages-read", () => {
+      fetchChats();
+    });
+
+    // Listen for delivery updates to refresh sidebar ticks
+    socket.on("message-delivered", () => {
+      fetchChats();
+    });
+
     return () => {
       socket.off("online-users");
       socket.off("message-received");
+      socket.off("messages-read");
+      socket.off("message-delivered");
     };
   }, [user, notifications, setOnlineUsers, setNotifications, fetchChats]);
 

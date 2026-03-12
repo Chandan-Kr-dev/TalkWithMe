@@ -29,8 +29,18 @@ export async function GET(req: NextRequest) {
     const decryptedChats = chats.map((chat) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const chatObj = chat.toObject() as any;
-      if (chatObj.latestMessage?.content) {
-        chatObj.latestMessage.content = decrypt(chatObj.latestMessage.content);
+      if (chatObj.latestMessage) {
+        if (chatObj.latestMessage.content) {
+          chatObj.latestMessage.content = decrypt(chatObj.latestMessage.content);
+        }
+        // Compute status from readBy if not already set
+        if (!chatObj.latestMessage.status) {
+          const senderId = chatObj.latestMessage.sender?._id?.toString();
+          const otherReaders = (chatObj.latestMessage.readBy || []).filter(
+            (id: { toString: () => string }) => id.toString() !== senderId
+          );
+          chatObj.latestMessage.status = otherReaders.length > 0 ? "read" : "sent";
+        }
       }
       return chatObj;
     });
@@ -71,8 +81,17 @@ export async function POST(req: NextRequest) {
     if (existingChat) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const chatObj = existingChat.toObject() as any;
-      if (chatObj.latestMessage?.content) {
-        chatObj.latestMessage.content = decrypt(chatObj.latestMessage.content);
+      if (chatObj.latestMessage) {
+        if (chatObj.latestMessage.content) {
+          chatObj.latestMessage.content = decrypt(chatObj.latestMessage.content);
+        }
+        if (!chatObj.latestMessage.status) {
+          const senderId = chatObj.latestMessage.sender?._id?.toString();
+          const otherReaders = (chatObj.latestMessage.readBy || []).filter(
+            (id: { toString: () => string }) => id.toString() !== senderId
+          );
+          chatObj.latestMessage.status = otherReaders.length > 0 ? "read" : "sent";
+        }
       }
       return NextResponse.json(chatObj);
     }

@@ -13,6 +13,7 @@ import {
   FiX,
   FiFile,
   FiDownload,
+  FiCheck,
 } from "react-icons/fi";
 import { Socket } from "socket.io-client";
 import toast from "react-hot-toast";
@@ -65,22 +66,123 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
     }
   }, [selectedChat, user]);
 
+  // Mark messages as read when chat is opened or new messages arrive
+  const markMessagesAsRead = useCallback(async () => {
+    if (!selectedChat || !user) return;
+
+    try {
+      const res = await fetch("/api/message/read", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ chatId: selectedChat._id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.messageIds?.length > 0) {
+        // Update local message statuses
+        setMessages((prev) =>
+          prev.map((msg) =>
+            data.messageIds.includes(msg._id)
+              ? { ...msg, status: "read" as const }
+              : msg
+          )
+        );
+        // Notify sender(s) via socket — include other user IDs for personal room delivery
+        const otherUserIds = selectedChat.users
+          .filter((u) => u._id !== user._id)
+          .map((u) => u._id);
+        socket?.emit("messages-read", {
+          chatId: selectedChat._id,
+          readerId: user._id,
+          messageIds: data.messageIds,
+          userIds: otherUserIds,
+        });
+        // Refresh sidebar to show updated ticks
+        onRefreshChats();
+      }
+    } catch (error) {
+      console.error("Mark as read error:", error);
+    }
+  }, [selectedChat, user, socket, onRefreshChats]);
+
+  // Keep a ref to avoid stale closures in socket listeners
+  const markMessagesAsReadRef = useRef(markMessagesAsRead);
+  useEffect(() => {
+    markMessagesAsReadRef.current = markMessagesAsRead;
+  }, [markMessagesAsRead]);
+  const onRefreshChatsRef = useRef(onRefreshChats);
+  useEffect(() => {
+    onRefreshChatsRef.current = onRefreshChats;
+  }, [onRefreshChats]);
+
   useEffect(() => {
     fetchMessages();
   }, [fetchMessages]);
+
+  // Ensure sender is in the chat room to receive delivery/read updates
+  useEffect(() => {
+    if (socket && selectedChat) {
+      socket.emit("join-chat", selectedChat._id);
+    }
+  }, [socket, selectedChat]);
+
+  // Mark as read when messages load or chat changes
+  useEffect(() => {
+    if (messages.length > 0) {
+      markMessagesAsRead();
+    }
+  }, [selectedChat?._id, messages.length > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // Socket listeners
+  // Socket listeners — use refs for callbacks to keep this effect stable
   useEffect(() => {
     if (!socket) return;
 
     const handleMessageReceived = (newMsg: MessageData) => {
       if (selectedChat && newMsg.chat._id === selectedChat._id) {
         setMessages((prev) => [...prev, newMsg]);
+        // Auto-mark as read since we're in the chat
+        markMessagesAsReadRef.current();
       }
+    };
+
+    const handleMessageDelivered = (data: { messageId: string; chatId: string }) => {
+      // Update our sent message to "delivered"
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === data.messageId && (!m.status || m.status === "sent")
+            ? { ...m, status: "delivered" as const }
+            : m
+        )
+      );
+      onRefreshChatsRef.current();
+    };
+
+    const handleMessagesRead = (data: {
+      chatId: string;
+      readerId: string;
+      messageIds: string[];
+      userIds?: string[];
+    }) => {
+      // Mark ALL of our sent messages in this chat as read
+      // This avoids ID matching issues and is semantically correct
+      if (data.chatId === selectedChat?._id) {
+        setMessages((prev) =>
+          prev.map((m) => {
+            const isOwnMessage = m.sender._id === useChatStore.getState().user?._id;
+            if (isOwnMessage && m.status !== "read") {
+              return { ...m, status: "read" as const };
+            }
+            return m;
+          })
+        );
+      }
+      onRefreshChatsRef.current();
     };
 
     const handleTyping = (room: string) => {
@@ -92,11 +194,15 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
     };
 
     socket.on("message-received", handleMessageReceived);
+    socket.on("message-delivered", handleMessageDelivered);
+    socket.on("messages-read", handleMessagesRead);
     socket.on("typing", handleTyping);
     socket.on("stop-typing", handleStopTyping);
 
     return () => {
       socket.off("message-received", handleMessageReceived);
+      socket.off("message-delivered", handleMessageDelivered);
+      socket.off("messages-read", handleMessagesRead);
       socket.off("typing", handleTyping);
       socket.off("stop-typing", handleStopTyping);
     };
@@ -126,7 +232,14 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
 
       const data = await res.json();
       if (res.ok) {
-        setMessages((prev) => [...prev, data]);
+        // Check if any recipients are online — if so, set status to delivered immediately
+        const onlineUsers = useChatStore.getState().onlineUsers;
+        const recipientOnline = selectedChat.users.some(
+          (u) => u._id !== user._id && onlineUsers.includes(u._id)
+        );
+        const msgWithStatus = { ...data, status: recipientOnline ? "delivered" : "sent" };
+
+        setMessages((prev) => [...prev, msgWithStatus]);
         setNewMessage("");
         setShowEmoji(false);
 
@@ -206,7 +319,14 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
 
       const data = await res.json();
       if (res.ok) {
-        setMessages((prev) => [...prev, data]);
+        // Check if any recipients are online
+        const onlineUsers = useChatStore.getState().onlineUsers;
+        const recipientOnline = selectedChat.users.some(
+          (u) => u._id !== user._id && onlineUsers.includes(u._id)
+        );
+        const msgWithStatus = { ...data, status: recipientOnline ? "delivered" : "sent" };
+
+        setMessages((prev) => [...prev, msgWithStatus]);
         setNewMessage("");
         clearSelectedFile();
         setShowEmoji(false);
@@ -441,14 +561,34 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
                         <p className="text-sm leading-relaxed break-all">{msg.content}</p>
                       )}
                       <p
-                        className={`text-[10px] mt-1 ${
+                        className={`text-[10px] mt-1 flex items-center justify-end gap-1 ${
                           isMe ? "text-white/70" : "text-gray-400"
-                        } text-right`}
+                        }`}
                       >
                         {new Date(msg.createdAt).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
+                        {isMe && (
+                          <span className="inline-flex items-center ml-0.5">
+                            {msg.status === "read" ? (
+                              /* Double blue tick */
+                              <span className="text-blue-300 flex">
+                                <FiCheck size={12} className="-mr-1.5" strokeWidth={3} />
+                                <FiCheck size={12} strokeWidth={3} />
+                              </span>
+                            ) : msg.status === "delivered" ? (
+                              /* Double gray tick */
+                              <span className="flex">
+                                <FiCheck size={12} className="-mr-1.5" strokeWidth={3} />
+                                <FiCheck size={12} strokeWidth={3} />
+                              </span>
+                            ) : (
+                              /* Single gray tick */
+                              <FiCheck size={12} strokeWidth={3} />
+                            )}
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
