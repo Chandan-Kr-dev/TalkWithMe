@@ -142,11 +142,6 @@ export default function AuthPage() {
     }
   };
 
-  const handleGuestLogin = () => {
-    setEmail("guest@example.com");
-    setPassword("123456");
-  };
-
   const handleForgotPassword = async () => {
     if (!forgotEmail.trim()) {
       toast.error("Please enter your email");
@@ -273,7 +268,8 @@ export default function AuthPage() {
             <p className="text-white/60 text-sm mb-1">
               Enter the 6-digit code sent to
             </p>
-            <p className="text-purple-300 font-semibold text-sm mb-6">{forgotEmail}</p>
+            <p className="text-purple-300 font-semibold text-sm mb-1">{forgotEmail}</p>
+            <p className="text-yellow-300/80 text-xs mb-6">📬 Don&apos;t see it? Check your spam or junk folder</p>
 
             {/* OTP Input */}
             <div className="flex justify-center gap-1.5 sm:gap-2 mb-6">
@@ -404,7 +400,8 @@ export default function AuthPage() {
             <p className="text-white/60 text-sm mb-1">
               We&apos;ve sent a 6-digit code to
             </p>
-            <p className="text-purple-300 font-semibold text-sm mb-6">{verifyEmail}</p>
+            <p className="text-purple-300 font-semibold text-sm mb-1">{verifyEmail}</p>
+            <p className="text-yellow-300/80 text-xs mb-6">📬 Don&apos;t see it? Check your spam or junk folder</p>
 
             {/* OTP Input Boxes */}
             <div className="flex justify-center gap-1.5 sm:gap-2 mb-6">
@@ -685,14 +682,6 @@ export default function AuthPage() {
             </button>
           </form>
 
-          {isLogin && (
-            <button
-              onClick={handleGuestLogin}
-              className="w-full mt-3 py-3 rounded-xl bg-white/10 border border-white/20 text-white font-medium hover:bg-white/20 transition-all duration-300"
-            >
-              Get Guest User Credentials
-            </button>
-          )}
         </div>
         )}
       </div>

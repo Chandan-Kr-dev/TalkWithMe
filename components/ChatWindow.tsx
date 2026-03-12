@@ -19,6 +19,7 @@ import { Socket } from "socket.io-client";
 import toast from "react-hot-toast";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import GroupInfoModal from "./GroupInfoModal";
+import FriendProfileModal from "./FriendProfileModal";
 
 interface ChatWindowProps {
   socket: Socket | null;
@@ -37,6 +38,7 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
   const [isTyping, setIsTyping] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [showFriendProfile, setShowFriendProfile] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -414,10 +416,14 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
         <img
           src={getChatAvatar()}
           alt={getChatName()}
-          className="w-10 h-10 rounded-full object-cover"
+          className={`w-10 h-10 rounded-full object-cover ${!selectedChat?.isGroupChat ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
+          onClick={() => !selectedChat?.isGroupChat && setShowFriendProfile(true)}
         />
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-800 dark:text-gray-100 truncate">{getChatName()}</h3>
+        <div
+          className={`flex-1 min-w-0 ${!selectedChat?.isGroupChat ? "cursor-pointer" : ""}`}
+          onClick={() => !selectedChat?.isGroupChat && setShowFriendProfile(true)}
+        >
+          <h3 className="font-semibold text-gray-800 dark:text-gray-100 truncate hover:underline">{getChatName()}</h3>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {isTyping ? (
               <span className="text-green-500 font-medium">typing...</span>
@@ -447,7 +453,7 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
           </button>
           {showMenu && (
             <div className="absolute top-12 right-0 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50">
-              {selectedChat?.isGroupChat && (
+              {selectedChat?.isGroupChat ? (
                 <button
                   onClick={() => {
                     setShowGroupInfo(true);
@@ -456,6 +462,16 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
                   className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-gray-800 dark:text-gray-200"
                 >
                   <FiUsers size={16} /> Group Info
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setShowFriendProfile(true);
+                    setShowMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-gray-800 dark:text-gray-200"
+                >
+                  <FiInfo size={16} /> View Profile
                 </button>
               )}
               <button
@@ -701,6 +717,18 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
           onRefreshChats={onRefreshChats}
         />
       )}
+
+      {/* Friend Profile Modal */}
+      {showFriendProfile && selectedChat && !selectedChat.isGroupChat && (() => {
+        const friend = selectedChat.users.find((u) => u._id !== user?._id);
+        if (!friend) return null;
+        return (
+          <FriendProfileModal
+            friendUser={friend}
+            onClose={() => setShowFriendProfile(false)}
+          />
+        );
+      })()}
 
       {/* Image Lightbox */}
       {lightboxImage && (
