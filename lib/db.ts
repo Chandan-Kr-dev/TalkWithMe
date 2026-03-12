@@ -25,9 +25,15 @@ async function connectDB() {
   }
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI).then((mongoose) => {
+    cached.promise = mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+    }).then((mongoose) => {
       console.log("✅ MongoDB connected");
       return mongoose;
+    }).catch((err) => {
+      cached.promise = null;
+      throw err;
     });
   }
 
