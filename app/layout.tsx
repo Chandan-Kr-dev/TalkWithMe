@@ -11,6 +11,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "TalkWithMe - Real-time Chat",
   description: "A real-time chat application built with Next.js, Socket.IO, and MongoDB",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({

@@ -1,6 +1,6 @@
 # TalkWithMe 💬
 
-A full-stack real-time chat application built with **Next.js**, **Socket.IO**, and **MongoDB**. Features one-on-one and group chats, file sharing, end-to-end message encryption, and more.
+TalkWithMe is a full-stack real-time chat app built with Next.js, Socket.IO, MongoDB, and TypeScript. It supports private and group conversations, encrypted message storage, OTP-based email verification, password recovery, media sharing, delivery/read states, and responsive light/dark UI.
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-4-white?logo=socket.io&logoColor=black)
@@ -10,46 +10,50 @@ A full-stack real-time chat application built with **Next.js**, **Socket.IO**, a
 
 ---
 
-## ✨ Features
+## ✨ Highlights
 
-### 💬 Messaging
-- **Real-time messaging** with Socket.IO — instant delivery, no polling
-- **One-on-one chats** and **group chats** with admin controls
-- **Typing indicators** — see when someone is typing
-- **Emoji picker** — built-in emoji support
-- **Read receipts** — track who has read your messages
+### 🔐 Authentication & Account Security
+- Register with name, email, password, and optional avatar upload
+- OTP email verification for new accounts, including resend support
+- Login flow that detects unverified accounts and routes users back to verification
+- Forgot-password flow with email OTP and secure password reset
+- In-app change-password screen from settings
+- JWT-based auth with bcrypt password hashing
 
-### 📎 File Sharing
-- Send **photos**, **videos**, and **documents** in chat
-- Supported formats: JPEG, PNG, WebP, GIF, MP4, WebM, MOV, PDF, Word, Excel, PowerPoint, TXT, ZIP, RAR
-- **Image lightbox** — click images to view full-screen with download option
-- **Inline video player** — videos play directly in chat
-- **Document downloads** — one-click download for files
-- Files stored on **Cloudinary** (25 GB free tier)
+### 💬 Real-Time Chat
+- One-to-one and group conversations
+- Socket.IO-powered real-time message delivery
+- Typing indicators for active conversations
+- Delivery and read states with live updates
+- Real-time online/offline presence
+- Toast notifications for messages received outside the active chat
 
-### 🔐 Security
-- **AES-256-GCM message encryption** — messages are encrypted at rest in MongoDB; a DBA cannot read them
-- **JWT authentication** with secure token handling
-- **Password hashing** with bcrypt
-- **Email verification** via OTP on registration
+### 📎 Media & File Sharing
+- Upload chat attachments through Cloudinary
+- Supported chat file categories: images, videos, and documents
+- Supported formats include JPEG, PNG, WebP, GIF, MP4, WebM, MOV, PDF, Word, Excel, PowerPoint, TXT, ZIP, and RAR
+- Inline image previews with full-screen lightbox
+- Inline video playback and downloadable documents
+- Avatar uploads with validation and image optimization
 
-### 👤 User Profiles
-- Customizable **avatar** (uploaded to Cloudinary), **name**, and **about** status
-- **Online/offline** presence indicators
-- **User search** to find and start conversations
+### 👥 Social & Group Features
+- Search users and start chats quickly
+- Create group chats with selected members
+- Group admin controls to add or remove members
+- Group info modal with member management
+- Friend profile modal with avatar, email, about text, and presence state
 
-### 👥 Group Chats
-- Create groups with custom name and avatar
-- **Add/remove members** (admin only)
-- Group info modal with member list
+### 🎨 UX Enhancements
+- Fully responsive auth and chat experience
+- Mobile sidebar/chat navigation
+- Persisted light and dark theme toggle
+- Modern modal-based settings, profile, and group management flows
+- Emoji picker integrated into the chat composer
 
-### 🔔 Notifications
-- Real-time **in-app notifications** for new messages
-- Toast alerts for messages received outside the active chat
-
-### 📱 Responsive Design
-- Fully responsive — works on **desktop**, **tablet**, and **mobile**
-- Mobile-first sidebar/chat toggle layout
+### 🛡️ Data Protection
+- AES-256-GCM encryption for message content at rest
+- MongoDB persistence through Mongoose models
+- Secure SMTP-based OTP delivery via Nodemailer
 
 ---
 
@@ -57,62 +61,88 @@ A full-stack real-time chat application built with **Next.js**, **Socket.IO**, a
 
 | Layer | Technology |
 |-------|-----------|
-| **Frontend** | Next.js 16, React 19, Tailwind CSS 4, Zustand |
-| **Backend** | Next.js API Routes, Custom HTTP server |
-| **Real-time** | Socket.IO (server + client) |
-| **Database** | MongoDB Atlas + Mongoose |
-| **File Storage** | Cloudinary |
-| **Auth** | JWT (jsonwebtoken) + bcrypt + Nodemailer OTP |
-| **Encryption** | AES-256-GCM (Node.js crypto) |
-| **Language** | TypeScript |
+| Frontend | Next.js 16, React 19, Tailwind CSS 4, Zustand, React Hot Toast |
+| Backend | Next.js App Router API routes, custom Node HTTP server |
+| Real-time | Socket.IO server + client |
+| Database | MongoDB Atlas, Mongoose |
+| Auth | JWT, bcryptjs, Nodemailer |
+| Storage | Cloudinary |
+| Security | Node.js crypto with AES-256-GCM |
+| Language | TypeScript |
+
+---
+
+## 🧩 Current Feature Set
+
+- Email verification flow with OTP entry screen and resend action
+- Forgot password and reset password flow on the auth page
+- Settings modal with theme switching and password change
+- Chat sidebar with search, notifications, unread indicators, and logout
+- Chat window with message composer, emoji picker, file uploads, and read receipts
+- Friend and group detail modals for richer conversation context
+- Encrypted message storage with real-time delivery updates
 
 ---
 
 ## 📁 Project Structure
 
-```
+```text
 talkwithme/
 ├── app/
-│   ├── page.tsx                  # Auth page (login/register)
-│   ├── chat/page.tsx             # Main chat page
-│   ├── layout.tsx                # Root layout
-│   ├── globals.css               # Global styles
+│   ├── page.tsx                         # Auth page: login, register, verify OTP, forgot/reset password
+│   ├── chat/page.tsx                    # Main chat shell and socket setup
+│   ├── layout.tsx                       # App layout + theme provider
+│   ├── globals.css                      # Global styling
 │   └── api/
 │       ├── auth/
+│       │   ├── change-password/route.ts
+│       │   ├── forgot-password/route.ts
 │       │   ├── login/route.ts
 │       │   ├── register/route.ts
+│       │   ├── reset-password/route.ts
 │       │   └── verify-email/route.ts
 │       ├── chat/
-│       │   ├── route.ts          # Fetch/create chats
-│       │   └── group/            # Group chat CRUD
-│       ├── message/route.ts      # Send/fetch messages
-│       ├── notification/route.ts # Notification management
-│       ├── upload/route.ts       # File upload (Cloudinary)
-│       └── user/route.ts         # User search & profile update
+│       │   ├── route.ts
+│       │   └── group/
+│       │       ├── route.ts
+│       │       ├── add/route.ts
+│       │       └── remove/route.ts
+│       ├── message/
+│       │   ├── route.ts
+│       │   └── read/route.ts
+│       ├── notification/route.ts
+│       ├── upload/route.ts
+│       └── user/route.ts
 ├── components/
-│   ├── ChatWindow.tsx            # Chat messages, file sharing, lightbox
-│   ├── Sidebar.tsx               # Chat list, search, notifications
-│   ├── GroupChatModal.tsx         # Create group modal
-│   ├── GroupInfoModal.tsx         # Group details & member management
-│   ├── ProfileModal.tsx          # Edit profile modal
-│   └── WelcomeScreen.tsx         # Shown when no chat is selected
+│   ├── ChatWindow.tsx                   # Chat UI, attachments, emoji picker, lightbox, read states
+│   ├── FriendProfileModal.tsx           # Friend profile details modal
+│   ├── GroupChatModal.tsx               # Create group modal
+│   ├── GroupInfoModal.tsx               # Group info and member management
+│   ├── ProfileModal.tsx                 # Edit current user profile
+│   ├── SettingsModal.tsx                # Theme + password settings
+│   ├── Sidebar.tsx                      # Chat list, search, notifications, settings entry
+│   ├── ThemeProvider.tsx                # Applies persisted theme to the app
+│   └── WelcomeScreen.tsx                # Empty-state view
 ├── lib/
-│   ├── auth.ts                   # JWT helpers
-│   ├── cloudinary.ts             # Cloudinary config
-│   ├── db.ts                     # MongoDB connection
-│   ├── encryption.ts             # AES-256-GCM encrypt/decrypt
-│   ├── getAuthUser.ts            # Auth middleware
-│   ├── mailer.ts                 # Nodemailer OTP emails
-│   ├── socket.ts                 # Socket.IO server
-│   └── socketClient.ts           # Socket.IO client
+│   ├── auth.ts                          # JWT helpers
+│   ├── cloudinary.ts                    # Cloudinary configuration
+│   ├── db.ts                            # MongoDB connection helper
+│   ├── encryption.ts                    # Encrypt/decrypt message content
+│   ├── getAuthUser.ts                   # Authenticated user resolver for API routes
+│   ├── mailer.ts                        # Verification and reset OTP emails
+│   ├── socket.ts                        # Socket.IO server initialization
+│   └── socketClient.ts                  # Shared client socket instance
 ├── models/
 │   ├── Chat.ts
 │   ├── Message.ts
 │   ├── Notification.ts
 │   └── User.ts
+├── public/
+│   └── avatars/
 ├── store/
-│   └── chatStore.ts              # Zustand state management
-├── server.ts                     # Custom HTTP server with Socket.IO
+│   └── chatStore.ts                     # Zustand state, user session, theme, chat data
+├── server.ts                            # Custom Next.js + Socket.IO server
+├── socket-server.ts                     # Alternate Socket.IO server entry
 └── package.json
 ```
 
@@ -122,10 +152,11 @@ talkwithme/
 
 ### Prerequisites
 
-- **Node.js** 18+ and **npm**
-- **MongoDB Atlas** account (or local MongoDB)
-- **Cloudinary** account ([free tier](https://cloudinary.com/))
-- **Gmail** (or any SMTP provider) for email verification
+- Node.js 18+
+- npm
+- MongoDB Atlas account or local MongoDB instance
+- Cloudinary account
+- SMTP provider credentials for OTP emails
 
 ### 1. Clone the repository
 
@@ -140,9 +171,9 @@ cd talkwithme
 npm install
 ```
 
-### 3. Set up environment variables
+### 3. Configure environment variables
 
-Create a `.env.local` file in the root directory:
+Create a `.env.local` file in the project root:
 
 ```env
 # MongoDB
@@ -151,7 +182,7 @@ MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/<dbname>
 # Auth
 JWT_SECRET=your_jwt_secret
 
-# SMTP (for email OTP verification)
+# SMTP (OTP verification + password reset)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
@@ -162,21 +193,28 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
-# Message encryption key (generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+# Message encryption key
+# Generate with:
+# node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 MESSAGE_ENCRYPTION_KEY=your_64_char_hex_key
+
+# Optional
+PORT=3000
 ```
 
-> ⚠️ **Important:** Never lose the `MESSAGE_ENCRYPTION_KEY` — without it, encrypted messages become permanently unreadable.
+> Important: keep `MESSAGE_ENCRYPTION_KEY` safe. If it changes, previously encrypted messages cannot be decrypted.
 
-### 4. Run the development server
+### 4. Run in development
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+This starts the custom server in `server.ts`, which boots both Next.js and Socket.IO together.
 
-### 5. Build for production
+Open http://localhost:3000 in your browser.
+
+### 5. Build and run in production
 
 ```bash
 npm run build
@@ -185,17 +223,49 @@ npm start
 
 ---
 
-## 📜 Available Scripts
+## 📜 Scripts
 
 | Script | Description |
 |--------|-------------|
-| `npm run dev` | Start development server (Next.js + Socket.IO) |
-| `npm run build` | Build for production |
-| `npm start` | Start production server |
+| `npm run dev` | Start the custom Next.js + Socket.IO development server |
+| `npm run dev:next` | Start plain Next.js dev mode without the custom server |
+| `npm run build` | Build the Next.js app for production |
+| `npm start` | Start the production custom server |
+| `npm run socket-server` | Run the alternate Socket.IO server entry manually |
 | `npm run lint` | Run ESLint |
+
+---
+
+## 🔄 Core Flows
+
+### New account flow
+1. Register with name, email, password, and optional avatar
+2. Receive a 6-digit verification code by email
+3. Verify the code on the auth page
+4. Log in and enter the chat workspace
+
+### Password recovery flow
+1. Click “Forgot Password?”
+2. Request a reset code by email
+3. Enter the OTP and a new password
+4. Return to login with the updated password
+
+### Messaging flow
+1. Search for a user or open an existing chat
+2. Send text, emoji, image, video, or document messages
+3. Receive live delivery/read state updates through Socket.IO
+4. Get notifications for messages outside the active conversation
+
+---
+
+## 📌 Notes
+
+- `npm run dev` is the recommended local command because the chat experience depends on the custom Socket.IO server.
+- File validation happens on both the client and server for safer uploads.
+- The app stores theme preference and user session in Zustand persistence.
 
 ---
 
 ## 📄 License
 
-This project is for personal/educational use.
+This project is intended for personal and educational use.

@@ -1,10 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useChatStore } from "@/store/chatStore";
 import toast, { Toaster } from "react-hot-toast";
-import { FiEye, FiEyeOff, FiMessageCircle, FiCamera, FiX, FiShield, FiKey } from "react-icons/fi";
+import { FiEye, FiEyeOff, FiCamera, FiX, FiShield, FiKey } from "react-icons/fi";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -215,8 +216,15 @@ export default function AuthPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm mb-4">
-            <FiMessageCircle className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/10 backdrop-blur-sm mb-4 p-3 shadow-lg border border-white/10 overflow-hidden">
+            <Image
+              src="/logo.png"
+              alt="TalkWithMe logo"
+              width={64}
+              height={64}
+              className="h-full w-full rounded-full object-cover"
+              priority
+            />
           </div>
           <h1 className="text-3xl font-bold text-white">TalkWithMe</h1>
           <p className="text-white/60 mt-2">Connect with friends in real-time</p>
