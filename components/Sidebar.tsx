@@ -11,10 +11,14 @@ import {
   FiX,
   FiUsers,
   FiEdit2,
+  FiSun,
+  FiMoon,
+  FiSettings,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import GroupChatModal from "./GroupChatModal";
 import ProfileModal from "./ProfileModal";
+import SettingsModal from "./SettingsModal";
 
 interface SidebarProps {
   onSelectChat: (chat: ChatData) => void;
@@ -22,7 +26,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) {
-  const { user, chats, selectedChat, notifications, onlineUsers, logout } = useChatStore();
+  const { user, chats, selectedChat, notifications, onlineUsers, logout, theme, toggleTheme } = useChatStore();
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState<ChatUser[]>([]);
@@ -30,6 +34,7 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     if (!search.trim()) {
@@ -131,9 +136,9 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
 
   return (
     <>
-      <div className="w-full md:w-95 bg-white border-r border-gray-200 flex flex-col h-full">
+      <div className="w-full md:w-95 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full">
         {/* Header */}
-        <div className="px-4 py-3 bg-white border-b border-gray-100">
+        <div className="px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <button
@@ -146,15 +151,35 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                   className="w-full h-full object-cover"
                 />
               </button>
-              <h2 className="text-xl font-bold text-gray-800">Chats</h2>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Chats</h2>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 sm:gap-1">
               {/* Notifications */}
+              {/* Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title={theme === 'light' ? 'Dark mode' : 'Light mode'}
+              >
+                {theme === 'light' ? (
+                  <FiMoon size={20} className="text-gray-600 dark:text-gray-300" />
+                ) : (
+                  <FiSun size={20} className="text-gray-600 dark:text-gray-300" />
+                )}
+              </button>
+              {/* Settings */}
+              <button
+                onClick={() => setShowSettings(true)}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title="Settings"
+              >
+                <FiSettings size={20} className="text-gray-600 dark:text-gray-300" />
+              </button>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+                className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
-                <FiBell size={20} className="text-gray-600" />
+                <FiBell size={20} className="text-gray-600 dark:text-gray-300" />
                 {notifications.length > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
                     {notifications.length}
@@ -164,31 +189,31 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
               {/* New Group */}
               <button
                 onClick={() => setShowGroupModal(true)}
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 title="New Group Chat"
               >
-                <FiUsers size={20} className="text-gray-600" />
+                <FiUsers size={20} className="text-gray-600 dark:text-gray-300" />
               </button>
               {/* Logout */}
               <button
                 onClick={handleLogout}
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 title="Logout"
               >
-                <FiLogOut size={20} className="text-gray-600" />
+                <FiLogOut size={20} className="text-gray-600 dark:text-gray-300" />
               </button>
             </div>
           </div>
 
           {/* Search */}
           <div className="relative">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={16} />
             <input
               type="text"
               placeholder="Search users..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-10 py-2.5 bg-gray-100 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:bg-white transition-all"
+              className="w-full pl-10 pr-10 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-600 focus:bg-white dark:focus:bg-gray-700 transition-all"
             />
             {search && (
               <button
@@ -206,9 +231,9 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
 
         {/* Notification Dropdown */}
         {showNotifications && notifications.length > 0 && (
-          <div className="absolute top-20 right-4 z-50 w-72 bg-white rounded-xl shadow-2xl border border-gray-100 p-2 max-h-80 overflow-y-auto">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 mb-1">
-              <span className="font-semibold text-sm text-gray-700">Notifications</span>
+          <div className="absolute top-20 right-2 left-2 sm:left-auto sm:right-4 z-50 sm:w-72 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 p-2 max-h-80 overflow-y-auto">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-700 mb-1">
+              <span className="font-semibold text-sm text-gray-700 dark:text-gray-200">Notifications</span>
               <button
                 onClick={() => setShowNotifications(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -223,14 +248,14 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                   onSelectChat(notif.chat);
                   setShowNotifications(false);
                 }}
-                className="w-full text-left px-3 py-2 hover:bg-purple-50 rounded-lg transition-colors"
+                className="w-full text-left px-3 py-2 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
               >
-                <p className="text-sm font-medium text-gray-800">
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
                   {notif.chat.isGroupChat
                     ? `New in ${notif.chat.chatName}`
                     : `New from ${notif.message.sender.name}`}
                 </p>
-                <p className="text-xs text-gray-500 truncate">{notif.message.content}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{notif.message.content}</p>
               </button>
             ))}
           </div>
@@ -238,7 +263,7 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
 
         {/* Search Results */}
         {search && (
-          <div className="p-2 border-b border-gray-100 max-h-60 overflow-y-auto">
+          <div className="p-2 border-b border-gray-100 dark:border-gray-700 max-h-60 overflow-y-auto">
             {searchLoading ? (
               <div className="flex items-center justify-center py-4">
                 <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-500 border-t-transparent" />
@@ -248,7 +273,7 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                 <button
                   key={u._id}
                   onClick={() => handleAccessChat(u._id)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-purple-50 rounded-xl transition-all"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-xl transition-all"
                 >
                   <img
                     src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.name}`}
@@ -256,8 +281,8 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                     className="w-10 h-10 rounded-full object-cover"
                   />
                   <div className="text-left">
-                    <p className="font-medium text-gray-800 text-sm">{u.name}</p>
-                    <p className="text-xs text-gray-500">{u.email}</p>
+                    <p className="font-medium text-gray-800 dark:text-gray-100 text-sm">{u.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{u.email}</p>
                   </div>
                   <FiPlus size={18} className="ml-auto text-purple-500" />
                 </button>
@@ -271,7 +296,7 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
         {/* Chat List */}
         <div className="flex-1 overflow-y-auto">
           {chats.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
               <FiEdit2 size={32} className="mb-3" />
               <p className="text-sm">No conversations yet</p>
               <p className="text-xs mt-1">Search for a user to start chatting</p>
@@ -283,8 +308,8 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                 <button
                   key={chat._id}
                   onClick={() => onSelectChat(chat)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-all border-b border-gray-50 ${
-                    selectedChat?._id === chat._id ? "bg-purple-50 border-l-4 border-l-purple-500" : ""
+                  className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all border-b border-gray-50 dark:border-gray-800 ${
+                    selectedChat?._id === chat._id ? "bg-purple-50 dark:bg-purple-900/30 border-l-4 border-l-purple-500" : ""
                   }`}
                 >
                   <div className="relative">
@@ -294,7 +319,7 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                       className="w-12 h-12 rounded-full object-cover"
                     />
                     {isUserOnline(chat) && (
-                      <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" />
+                      <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full" />
                     )}
                     {chat.isGroupChat && (
                       <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
@@ -304,17 +329,17 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                   </div>
                   <div className="flex-1 min-w-0 text-left">
                     <div className="flex items-center justify-between">
-                      <p className="font-semibold text-gray-800 text-sm truncate">
+                      <p className="font-semibold text-gray-800 dark:text-gray-100 text-sm truncate">
                         {getSenderName(chat)}
                       </p>
                       {chat.latestMessage && (
-                        <span className="text-xs text-gray-400 shrink-0 ml-2">
+                        <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0 ml-2">
                           {formatTime(chat.latestMessage.createdAt)}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center justify-between mt-0.5">
-                      <p className="text-xs text-gray-500 truncate">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {chat.latestMessage
                           ? `${chat.isGroupChat ? chat.latestMessage.sender.name + ": " : ""}${chat.latestMessage.content}`
                           : "No messages yet"}
@@ -343,6 +368,10 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
 
       {showProfile && (
         <ProfileModal onClose={() => setShowProfile(false)} />
+      )}
+
+      {showSettings && (
+        <SettingsModal onClose={() => setShowSettings(false)} />
       )}
     </>
   );

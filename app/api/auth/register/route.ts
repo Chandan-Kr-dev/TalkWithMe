@@ -11,11 +11,13 @@ function generateOTP(): string {
 // POST /api/auth/register
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password, avatar } = await req.json();
+    const { name, email: rawEmail, password, avatar } = await req.json();
 
-    if (!name || !email || !password) {
+    if (!name || !rawEmail || !password) {
       return NextResponse.json({ message: "Please fill all fields" }, { status: 400 });
     }
+
+    const email = rawEmail.toLowerCase().trim();
 
     await connectDB();
 

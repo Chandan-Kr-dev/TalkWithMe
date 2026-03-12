@@ -113,12 +113,12 @@ export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupI
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[80vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md shadow-2xl max-h-[80vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10 rounded-t-2xl">
-          <h3 className="text-lg font-bold text-gray-800">Group Info</h3>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
-            <FiX size={20} className="text-gray-500" />
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-900 z-10 rounded-t-2xl">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Group Info</h3>
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+            <FiX size={20} className="text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -136,7 +136,7 @@ export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupI
                   type="text"
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
-                  className="flex-1 px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-600"
                 />
                 <button
                   onClick={handleRename}
@@ -147,7 +147,7 @@ export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupI
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <h4 className="text-xl font-bold text-gray-800">{chat.chatName}</h4>
+                <h4 className="text-xl font-bold text-gray-800 dark:text-gray-100">{chat.chatName}</h4>
                 {isAdmin && (
                   <button onClick={() => setIsEditing(true)} className="text-gray-400 hover:text-purple-500">
                     <FiEdit2 size={16} />
@@ -155,13 +155,13 @@ export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupI
                 )}
               </div>
             )}
-            <p className="text-sm text-gray-500">{chat.users.length} members</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{chat.users.length} members</p>
           </div>
 
           {/* Members */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h5 className="font-semibold text-gray-700 text-sm">Members</h5>
+              <h5 className="font-semibold text-gray-700 dark:text-gray-200 text-sm">Members</h5>
               {isAdmin && (
                 <button
                   onClick={() => setShowAddUser(!showAddUser)}
@@ -182,7 +182,7 @@ export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupI
                     placeholder="Search users to add..."
                     value={search}
                     onChange={(e) => handleSearch(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    className="w-full pl-9 pr-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-600"
                   />
                 </div>
                 {searchResults.length > 0 && (
@@ -191,14 +191,14 @@ export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupI
                       <button
                         key={u._id}
                         onClick={() => handleAddUser(u._id)}
-                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-purple-50 rounded-lg text-sm"
+                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg text-sm"
                       >
                         <img
                           src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.name}`}
                           alt={u.name}
                           className="w-7 h-7 rounded-full"
                         />
-                        <span className="text-gray-800">{u.name}</span>
+                        <span className="text-gray-800 dark:text-gray-200">{u.name}</span>
                         <FiUserPlus size={14} className="ml-auto text-purple-500" />
                       </button>
                     ))}
@@ -210,14 +210,14 @@ export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupI
             {/* Members List */}
             <div className="space-y-1">
               {chat.users.map((member) => (
-                <div key={member._id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50">
+                <div key={member._id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800">
                   <img
                     src={member.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.name}`}
                     alt={member.name}
                     className="w-9 h-9 rounded-full"
                   />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-800">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
                       {member.name}
                       {member._id === user?._id && " (You)"}
                     </p>
@@ -241,7 +241,7 @@ export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupI
           {/* Leave Group */}
           <button
             onClick={() => handleRemoveUser(user?._id || "")}
-            className="w-full py-3 rounded-xl bg-red-50 text-red-500 font-semibold hover:bg-red-100 transition-all"
+            className="w-full py-3 rounded-xl bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 font-semibold hover:bg-red-100 dark:hover:bg-red-900/50 transition-all"
           >
             Leave Group
           </button>

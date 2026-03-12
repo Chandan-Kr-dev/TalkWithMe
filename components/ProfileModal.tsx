@@ -105,12 +105,12 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h3 className="text-lg font-bold text-gray-800">Profile</h3>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
-            <FiX size={20} className="text-gray-500" />
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Profile</h3>
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+            <FiX size={20} className="text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -121,7 +121,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
               <img
                 src={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=default`}
                 alt="Profile"
-                className="w-24 h-24 rounded-full ring-4 ring-purple-100 object-cover"
+                className="w-24 h-24 rounded-full ring-4 ring-purple-100 dark:ring-purple-900 object-cover"
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -145,25 +145,25 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 className="hidden"
               />
             </div>
-            <p className="text-xs text-gray-400 mt-2 mb-1">Hover avatar to change</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 mb-1">Hover avatar to change</p>
             {isEditing ? (
               <div className="w-full space-y-3 mt-2">
                 <div>
-                  <label className="text-xs font-medium text-gray-500 mb-1 block">Name</label>
+                  <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Name</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-gray-100 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    className="w-full px-3 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-600"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-500 mb-1 block">About</label>
+                  <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">About</label>
                   <input
                     type="text"
                     value={about}
                     onChange={(e) => setAbout(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-gray-100 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    className="w-full px-3 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-600"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -176,7 +176,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                   </button>
                   <button
                     onClick={() => setIsEditing(false)}
-                    className="px-4 py-2.5 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium hover:bg-gray-200 transition-all"
+                    className="px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
                   >
                     Cancel
                   </button>
@@ -185,25 +185,25 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
             ) : (
               <>
                 <div className="flex items-center gap-2 mb-1">
-                  <h4 className="text-xl font-bold text-gray-800">{user?.name}</h4>
+                  <h4 className="text-xl font-bold text-gray-800 dark:text-gray-100">{user?.name}</h4>
                   <button onClick={() => setIsEditing(true)} className="text-gray-400 hover:text-purple-500">
                     <FiEdit2 size={16} />
                   </button>
                 </div>
-                <p className="text-sm text-gray-500">{user?.about}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{user?.about}</p>
               </>
             )}
           </div>
 
           {!isEditing && (
-            <div className="space-y-3 pt-2 border-t border-gray-100">
+            <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-700">
               <div className="flex items-center gap-3 text-sm">
-                <FiMail size={16} className="text-gray-400" />
-                <span className="text-gray-600">{user?.email}</span>
+                <FiMail size={16} className="text-gray-400 dark:text-gray-500" />
+                <span className="text-gray-600 dark:text-gray-300">{user?.email}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <FiClock size={16} className="text-gray-400" />
-                <span className="text-gray-600">Active now</span>
+                <FiClock size={16} className="text-gray-400 dark:text-gray-500" />
+                <span className="text-gray-600 dark:text-gray-300">Active now</span>
               </div>
             </div>
           )}

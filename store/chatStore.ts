@@ -56,18 +56,23 @@ export interface NotificationData {
   createdAt: string;
 }
 
+export type Theme = "light" | "dark";
+
 interface ChatStore {
   user: UserInfo | null;
   selectedChat: ChatData | null;
   chats: ChatData[];
   notifications: NotificationData[];
   onlineUsers: string[];
+  theme: Theme;
   _hasHydrated: boolean;
   setUser: (user: UserInfo | null) => void;
   setSelectedChat: (chat: ChatData | null) => void;
   setChats: (chats: ChatData[]) => void;
   setNotifications: (notifications: NotificationData[]) => void;
   setOnlineUsers: (users: string[]) => void;
+  setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
   setHasHydrated: (v: boolean) => void;
   logout: () => void;
 }
@@ -80,6 +85,7 @@ export const useChatStore = create<ChatStore>()(
       chats: [],
       notifications: [],
       onlineUsers: [],
+      theme: "light" as Theme,
       _hasHydrated: false,
       setUser: (user) => set({ user }),
       setSelectedChat: (selectedChat) => set({ selectedChat }),
@@ -87,11 +93,13 @@ export const useChatStore = create<ChatStore>()(
       setHasHydrated: (v) => set({ _hasHydrated: v }),
       setNotifications: (notifications) => set({ notifications }),
       setOnlineUsers: (onlineUsers) => set({ onlineUsers }),
+      setTheme: (theme) => set({ theme }),
+      toggleTheme: () => set((state) => ({ theme: state.theme === "light" ? "dark" : "light" })),
       logout: () => set({ user: null, selectedChat: null, chats: [], notifications: [] }),
     }),
     {
       name: "talkwithme-store",
-      partialize: (state) => ({ user: state.user }),
+      partialize: (state) => ({ user: state.user, theme: state.theme }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },

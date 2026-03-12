@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useChatStore } from "@/store/chatStore";
 import toast, { Toaster } from "react-hot-toast";
-import { FiEye, FiEyeOff, FiMessageCircle, FiCamera, FiX, FiShield } from "react-icons/fi";
+import { FiEye, FiEyeOff, FiMessageCircle, FiCamera, FiX, FiShield, FiKey } from "react-icons/fi";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -20,8 +20,16 @@ export default function AuthPage() {
   const [verifyEmail, setVerifyEmail] = useState("");
   const [otp, setOtp] = useState(["" , "", "", "", "", ""]);
   const [verifying, setVerifying] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [showResetOtp, setShowResetOtp] = useState(false);
+  const [resetOtp, setResetOtp] = useState(["", "", "", "", "", ""]);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const resetOtpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -130,6 +138,73 @@ export default function AuthPage() {
     setPassword("123456");
   };
 
+  const handleForgotPassword = async () => {
+    if (!forgotEmail.trim()) {
+      toast.error("Please enter your email");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Reset code sent! Check your email.");
+        setShowForgotPassword(false);
+        setShowResetOtp(true);
+      } else {
+        toast.error(data.message);
+      }
+    } catch {
+      toast.error("Failed to send reset code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    const code = resetOtp.join("");
+    if (code.length !== 6) {
+      toast.error("Please enter the complete 6-digit code");
+      return;
+    }
+    if (!newPassword || newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    setVerifying(true);
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail, otp: code, newPassword }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Password reset successfully! You can now log in.");
+        setShowResetOtp(false);
+        setResetOtp(["", "", "", "", "", ""]);
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setForgotEmail("");
+        setIsLogin(true);
+      } else {
+        toast.error(data.message);
+      }
+    } catch {
+      toast.error("Failed to reset password");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-linear-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-4">
       <Toaster position="top-center" />
@@ -144,7 +219,174 @@ export default function AuthPage() {
         </div>
 
         {/* Auth Card */}
-        {showOtpScreen ? (
+        {showForgotPassword ? (
+          <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 text-center">
+            <div className="w-20 h-20 rounded-full bg-pink-500/20 flex items-center justify-center mx-auto mb-4">
+              <FiKey size={36} className="text-pink-300" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">Forgot Password?</h2>
+            <p className="text-white/60 text-sm mb-6">
+              Enter your email and we&apos;ll send you a code to reset your password.
+            </p>
+
+            <div className="space-y-4">
+              <input
+                type="email"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                placeholder="Enter your email"
+              />
+              <button
+                onClick={handleForgotPassword}
+                disabled={loading}
+                className="w-full py-3 rounded-xl bg-linear-to-r from-purple-500 to-pink-500 text-white font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg disabled:opacity-50"
+              >
+                {loading ? "Sending..." : "Send Reset Code"}
+              </button>
+              <button
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setForgotEmail("");
+                }}
+                className="text-white/50 text-sm hover:text-white/80 transition-colors"
+              >
+                ← Back to Login
+              </button>
+            </div>
+          </div>
+        ) : showResetOtp ? (
+          <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 text-center">
+            <div className="w-20 h-20 rounded-full bg-pink-500/20 flex items-center justify-center mx-auto mb-4">
+              <FiKey size={36} className="text-pink-300" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-2">Reset Password</h2>
+            <p className="text-white/60 text-sm mb-1">
+              Enter the 6-digit code sent to
+            </p>
+            <p className="text-purple-300 font-semibold text-sm mb-6">{forgotEmail}</p>
+
+            {/* OTP Input */}
+            <div className="flex justify-center gap-1.5 sm:gap-2 mb-6">
+              {resetOtp.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={(el) => { resetOtpRefs.current[i] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/, "");
+                    const newOtp = [...resetOtp];
+                    newOtp[i] = val;
+                    setResetOtp(newOtp);
+                    if (val && i < 5) resetOtpRefs.current[i + 1]?.focus();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Backspace" && !resetOtp[i] && i > 0) {
+                      resetOtpRefs.current[i - 1]?.focus();
+                    }
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+                    if (pasted.length === 6) {
+                      setResetOtp(pasted.split(""));
+                      resetOtpRefs.current[5]?.focus();
+                    }
+                  }}
+                  className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all"
+                />
+              ))}
+            </div>
+
+            {/* New Password */}
+            <div className="space-y-3 text-left mb-6">
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-1.5">New Password</label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all pr-12"
+                    placeholder="Enter new password"
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                  >
+                    {showNewPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-1.5">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all"
+                  placeholder="Confirm new password"
+                  minLength={6}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={handleResetPassword}
+                disabled={verifying}
+                className="w-full py-3 rounded-xl bg-linear-to-r from-purple-500 to-pink-500 text-white font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg disabled:opacity-50"
+              >
+                {verifying ? "Resetting..." : "Reset Password"}
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    setLoading(true);
+                    const res = await fetch("/api/auth/forgot-password", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ email: forgotEmail }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      toast.success("New reset code sent!");
+                      setResetOtp(["", "", "", "", "", ""]);
+                      resetOtpRefs.current[0]?.focus();
+                    } else {
+                      toast.error(data.message);
+                    }
+                  } catch {
+                    toast.error("Failed to resend code");
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="w-full py-3 rounded-xl bg-white/10 border border-white/20 text-white font-medium hover:bg-white/20 transition-all duration-300 disabled:opacity-50"
+              >
+                {loading ? "Sending..." : "Resend Code"}
+              </button>
+              <button
+                onClick={() => {
+                  setShowResetOtp(false);
+                  setResetOtp(["", "", "", "", "", ""]);
+                  setNewPassword("");
+                  setConfirmNewPassword("");
+                  setForgotEmail("");
+                }}
+                className="text-white/50 text-sm hover:text-white/80 transition-colors"
+              >
+                ← Back to Login
+              </button>
+            </div>
+          </div>
+        ) : showOtpScreen ? (
           <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 text-center">
             <div className="w-20 h-20 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto mb-4">
               <FiShield size={36} className="text-purple-300" />
@@ -156,7 +398,7 @@ export default function AuthPage() {
             <p className="text-purple-300 font-semibold text-sm mb-6">{verifyEmail}</p>
 
             {/* OTP Input Boxes */}
-            <div className="flex justify-center gap-2 mb-6">
+            <div className="flex justify-center gap-1.5 sm:gap-2 mb-6">
               {otp.map((digit, i) => (
                 <input
                   key={i}
@@ -186,7 +428,7 @@ export default function AuthPage() {
                       otpRefs.current[5]?.focus();
                     }
                   }}
-                  className="w-12 h-14 text-center text-xl font-bold rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                  className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
                 />
               ))}
             </div>
@@ -395,6 +637,21 @@ export default function AuthPage() {
                   required
                   minLength={6}
                 />
+              </div>
+            )}
+
+            {isLogin && (
+              <div className="text-right -mt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(true);
+                    setForgotEmail(email);
+                  }}
+                  className="text-sm text-purple-300 hover:text-purple-200 transition-colors"
+                >
+                  Forgot Password?
+                </button>
               </div>
             )}
 

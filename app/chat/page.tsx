@@ -122,7 +122,7 @@ export default function ChatPage() {
 
   if (!_hasHydrated || !user) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-100">
+      <div className="flex h-screen items-center justify-center bg-gray-100 dark:bg-gray-950">
         <div className="animate-spin rounded-full h-10 w-10 border-3 border-purple-500 border-t-transparent" />
       </div>
     );
@@ -143,7 +143,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100 overflow-hidden">
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-950 overflow-hidden">
       <Toaster position="top-center" />
 
       {/* Sidebar */}

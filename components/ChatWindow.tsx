@@ -28,6 +28,7 @@ interface ChatWindowProps {
 
 export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }: ChatWindowProps) {
   const { user, selectedChat } = useChatStore();
+  const theme = useChatStore((s) => s.theme);
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -282,12 +283,12 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-gray-50">
+    <div className="flex-1 flex flex-col h-full bg-gray-50 dark:bg-gray-950">
       {/* Chat Header */}
-      <div className="px-4 py-3 bg-white border-b border-gray-200 flex items-center gap-3 shadow-sm">
+      <div className="px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3 shadow-sm">
         {isMobile && (
-          <button onClick={onBack} className="p-1 rounded-full hover:bg-gray-100 transition-colors">
-            <FiArrowLeft size={22} className="text-gray-600" />
+          <button onClick={onBack} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            <FiArrowLeft size={22} className="text-gray-600 dark:text-gray-300" />
           </button>
         )}
         <img
@@ -296,8 +297,8 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
           className="w-10 h-10 rounded-full object-cover"
         />
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-800 truncate">{getChatName()}</h3>
-          <p className="text-xs text-gray-500">
+          <h3 className="font-semibold text-gray-800 dark:text-gray-100 truncate">{getChatName()}</h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             {isTyping ? (
               <span className="text-green-500 font-medium">typing...</span>
             ) : selectedChat?.isGroupChat ? (
@@ -313,26 +314,26 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
           {selectedChat?.isGroupChat && (
             <button
               onClick={() => setShowGroupInfo(true)}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
-              <FiInfo size={18} className="text-gray-600" />
+              <FiInfo size={18} className="text-gray-600 dark:text-gray-300" />
             </button>
           )}
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
-            <FiMoreVertical size={18} className="text-gray-600" />
+            <FiMoreVertical size={18} className="text-gray-600 dark:text-gray-300" />
           </button>
           {showMenu && (
-            <div className="absolute top-12 right-0 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
+            <div className="absolute top-12 right-0 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50">
               {selectedChat?.isGroupChat && (
                 <button
                   onClick={() => {
                     setShowGroupInfo(true);
                     setShowMenu(false);
                   }}
-                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2"
+                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-gray-800 dark:text-gray-200"
                 >
                   <FiUsers size={16} /> Group Info
                 </button>
@@ -342,7 +343,7 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
                   useChatStore.getState().setSelectedChat(null);
                   setShowMenu(false);
                 }}
-                className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 text-red-500"
+                className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 text-red-500"
               >
                 Close Chat
               </button>
@@ -355,7 +356,7 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
       <div
         className="flex-1 overflow-y-auto px-4 py-3"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='${theme === 'dark' ? '0.08' : '0.05'}'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }}
       >
         {loading ? (
@@ -377,7 +378,7 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
                 <div key={msg._id}>
                   {showDate && (
                     <div className="flex justify-center my-4">
-                      <span className="px-3 py-1 bg-white rounded-full text-xs text-gray-500 shadow-sm">
+                      <span className="px-3 py-1 bg-white dark:bg-gray-800 rounded-full text-xs text-gray-500 dark:text-gray-400 shadow-sm">
                         {formatDateSeparator(msg.createdAt)}
                       </span>
                     </div>
@@ -392,10 +393,10 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
                     )}
                     {!isMe && !showAvatar && <div className="w-7 mr-2" />}
                     <div
-                      className={`max-w-[70%] px-3.5 py-2 rounded-2xl ${
+                      className={`max-w-[85%] sm:max-w-[70%] px-3.5 py-2 rounded-2xl ${
                         isMe
                           ? "bg-purple-500 text-white rounded-br-md"
-                          : "bg-white text-gray-800 rounded-bl-md shadow-sm"
+                          : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-bl-md shadow-sm"
                       }`}
                     >
                       {selectedChat?.isGroupChat && !isMe && (
@@ -425,11 +426,11 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
                           target="_blank"
                           rel="noopener noreferrer"
                           className={`flex items-center gap-2 px-3 py-2 rounded-lg mb-1 transition-colors ${
-                            isMe ? "bg-purple-600 hover:bg-purple-700" : "bg-gray-100 hover:bg-gray-200"
+                            isMe ? "bg-purple-600 hover:bg-purple-700" : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
                           }`}
                         >
                           <FiFile size={20} className={isMe ? "text-white" : "text-purple-500"} />
-                          <span className={`text-sm truncate flex-1 ${isMe ? "text-white" : "text-gray-700"}`}>
+                          <span className={`text-sm truncate flex-1 ${isMe ? "text-white" : "text-gray-700 dark:text-gray-200"}`}>
                             {msg.fileName || "Document"}
                           </span>
                           <FiDownload size={16} className={isMe ? "text-white/70" : "text-gray-400"} />
@@ -456,7 +457,7 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
             })}
             {isTyping && (
               <div className="flex items-center gap-2 mt-2">
-                <div className="bg-white px-4 py-2.5 rounded-2xl rounded-bl-md shadow-sm">
+                <div className="bg-white dark:bg-gray-800 px-4 py-2.5 rounded-2xl rounded-bl-md shadow-sm">
                   <div className="flex gap-1">
                     <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
                     <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -478,33 +479,33 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
       )}
 
       {/* Message Input */}
-      <form onSubmit={handleSendMessage} className="px-4 py-3 bg-white border-t border-gray-200">
+      <form onSubmit={handleSendMessage} className="px-3 sm:px-4 py-2 sm:py-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
         {/* File Preview */}
         {selectedFile && (
-          <div className="mb-2 p-2 bg-gray-50 rounded-xl flex items-center gap-3">
+          <div className="mb-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-xl flex items-center gap-3">
             {filePreview && filePreview !== "video" && filePreview !== "document" ? (
-              <img src={filePreview} alt="Preview" className="w-14 h-14 rounded-lg object-cover" />
+              <img src={filePreview} alt="Preview" className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-cover" />
             ) : filePreview === "video" ? (
-              <div className="w-14 h-14 rounded-lg bg-purple-100 flex items-center justify-center">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-purple-100 flex items-center justify-center">
                 <span className="text-2xl">🎥</span>
               </div>
             ) : (
-              <div className="w-14 h-14 rounded-lg bg-blue-100 flex items-center justify-center">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-blue-100 flex items-center justify-center">
                 <FiFile size={24} className="text-blue-500" />
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-700 truncate">{selectedFile.name}</p>
-              <p className="text-xs text-gray-400">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">{selectedFile.name}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
                 {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
               </p>
             </div>
             <button
               type="button"
               onClick={clearSelectedFile}
-              className="p-1.5 rounded-full hover:bg-gray-200 transition-colors"
+              className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
-              <FiX size={18} className="text-gray-500" />
+              <FiX size={18} className="text-gray-500 dark:text-gray-400" />
             </button>
           </div>
         )}
@@ -512,17 +513,17 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
           <button
             type="button"
             onClick={() => setShowEmoji(!showEmoji)}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
-            <FiSmile size={22} className={showEmoji ? "text-purple-500" : "text-gray-500"} />
+            <FiSmile size={22} className={showEmoji ? "text-purple-500" : "text-gray-500 dark:text-gray-400"} />
           </button>
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             disabled={uploadingFile}
           >
-            <FiPaperclip size={22} className="text-gray-500" />
+            <FiPaperclip size={22} className="text-gray-500 dark:text-gray-400" />
           </button>
           <input
             ref={fileInputRef}
@@ -536,7 +537,7 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
             placeholder={selectedFile ? "Add a caption..." : "Type a message..."}
             value={newMessage}
             onChange={handleTyping}
-            className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:bg-white transition-all"
+            className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-full text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-600 focus:bg-white dark:focus:bg-gray-700 transition-all"
           />
           <button
             type="submit"

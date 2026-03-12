@@ -5,14 +5,16 @@ import User from "@/models/User";
 // POST /api/auth/verify-email { email, otp }
 export async function POST(req: NextRequest) {
   try {
-    const { email, otp } = await req.json();
+    const { email: rawEmail, otp } = await req.json();
 
-    if (!email || !otp) {
+    if (!rawEmail || !otp) {
       return NextResponse.json(
         { message: "Email and OTP are required" },
         { status: 400 }
       );
     }
+
+    const email = rawEmail.toLowerCase().trim();
 
     await connectDB();
 

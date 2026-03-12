@@ -8,11 +8,13 @@ import { sendVerificationOTP } from "@/lib/mailer";
 // POST /api/auth/login
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
+    const { email: rawEmail, password } = await req.json();
 
-    if (!email || !password) {
+    if (!rawEmail || !password) {
       return NextResponse.json({ message: "Please fill all fields" }, { status: 400 });
     }
+
+    const email = rawEmail.toLowerCase().trim();
 
     await connectDB();
 
