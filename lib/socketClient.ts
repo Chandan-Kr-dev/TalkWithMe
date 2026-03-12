@@ -6,7 +6,8 @@ let socket: Socket | null = null;
 
 export const getSocket = (): Socket => {
   if (!socket) {
-    socket = io(typeof window !== "undefined" ? window.location.origin : "", {
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
+    socket = io(socketUrl, {
       transports: ["websocket", "polling"],
     });
   }

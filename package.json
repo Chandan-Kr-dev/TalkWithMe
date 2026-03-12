@@ -7,6 +7,7 @@
     "dev:next": "next dev",
     "build": "next build",
     "start": "NODE_ENV=production npx tsx server.ts",
+    "socket-server": "npx tsx socket-server.ts",
     "lint": "eslint"
   },
   "dependencies": {
