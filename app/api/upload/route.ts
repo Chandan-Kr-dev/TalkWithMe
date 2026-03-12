@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { randomUUID } from "crypto";
+import cloudinary from "@/lib/cloudinary";
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,21 +31,26 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Generate unique filename
-    const ext = file.name.split(".").pop() || "png";
-    const filename = `${randomUUID()}.${ext}`;
+    // Upload to Cloudinary
+    const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream(
+          {
+            folder: "talkwithme/avatars",
+            transformation: [
+              { width: 300, height: 300, crop: "fill", gravity: "face" },
+              { quality: "auto", fetch_format: "auto" },
+            ],
+          },
+          (error, result) => {
+            if (error || !result) return reject(error);
+            resolve(result);
+          }
+        )
+        .end(buffer);
+    });
 
-    // Ensure avatars directory exists
-    const avatarsDir = path.join(process.cwd(), "public", "avatars");
-    await mkdir(avatarsDir, { recursive: true });
-
-    // Write file
-    const filePath = path.join(avatarsDir, filename);
-    await writeFile(filePath, buffer);
-
-    const avatarUrl = `/avatars/${filename}`;
-
-    return NextResponse.json({ url: avatarUrl }, { status: 201 });
+    return NextResponse.json({ url: result.secure_url }, { status: 201 });
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json({ message: "Upload failed" }, { status: 500 });
