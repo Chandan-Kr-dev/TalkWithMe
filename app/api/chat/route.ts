@@ -4,6 +4,7 @@ import Chat from "@/models/Chat";
 import User from "@/models/User";
 import "@/models/Message";
 import { getAuthUser } from "@/lib/getAuthUser";
+import { decrypt } from "@/lib/encryption";
 
 // GET /api/chat - Fetch all chats for the logged-in user
 export async function GET(req: NextRequest) {
@@ -24,7 +25,17 @@ export async function GET(req: NextRequest) {
       })
       .sort({ updatedAt: -1 });
 
-    return NextResponse.json(chats);
+    // Decrypt latestMessage content for each chat
+    const decryptedChats = chats.map((chat) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const chatObj = chat.toObject() as any;
+      if (chatObj.latestMessage?.content) {
+        chatObj.latestMessage.content = decrypt(chatObj.latestMessage.content);
+      }
+      return chatObj;
+    });
+
+    return NextResponse.json(decryptedChats);
   } catch (error) {
     console.error("Fetch chats error:", error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
@@ -58,7 +69,12 @@ export async function POST(req: NextRequest) {
       });
 
     if (existingChat) {
-      return NextResponse.json(existingChat);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const chatObj = existingChat.toObject() as any;
+      if (chatObj.latestMessage?.content) {
+        chatObj.latestMessage.content = decrypt(chatObj.latestMessage.content);
+      }
+      return NextResponse.json(chatObj);
     }
 
     // Create new chat

@@ -4,6 +4,7 @@ import Message from "@/models/Message";
 import Chat from "@/models/Chat";
 import User from "@/models/User";
 import { getAuthUser } from "@/lib/getAuthUser";
+import { encrypt, decrypt } from "@/lib/encryption";
 
 // GET /api/message?chatId=xxx - Get all messages for a chat
 export async function GET(req: NextRequest) {
@@ -24,7 +25,14 @@ export async function GET(req: NextRequest) {
       .populate("sender", "name avatar email")
       .populate("chat");
 
-    return NextResponse.json(messages);
+    // Decrypt message content before sending to client
+    const decryptedMessages = messages.map((msg) => {
+      const msgObj = msg.toObject();
+      msgObj.content = decrypt(msgObj.content);
+      return msgObj;
+    });
+
+    return NextResponse.json(decryptedMessages);
   } catch (error) {
     console.error("Get messages error:", error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
@@ -46,9 +54,12 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
+    // Encrypt message content before storing in database
+    const encryptedContent = encrypt(content);
+
     let message = await Message.create({
       sender: user._id,
-      content,
+      content: encryptedContent,
       chat: chatId,
       readBy: [user._id],
     });
@@ -63,7 +74,12 @@ export async function POST(req: NextRequest) {
     // Update latest message in chat
     await Chat.findByIdAndUpdate(chatId, { latestMessage: populatedMessage._id });
 
-    return NextResponse.json(populatedMessage, { status: 201 });
+    // Return decrypted content to the client
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const responseMessage = populatedMessage.toObject() as any;
+    responseMessage.content = decrypt(responseMessage.content);
+
+    return NextResponse.json(responseMessage, { status: 201 });
   } catch (error) {
     console.error("Send message error:", error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });

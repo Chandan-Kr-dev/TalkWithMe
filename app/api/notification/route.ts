@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Notification from "@/models/Notification";
 import { getAuthUser } from "@/lib/getAuthUser";
+import { decrypt } from "@/lib/encryption";
 
 // GET /api/notification - Get all notifications for user
 export async function GET(req: NextRequest) {
@@ -21,7 +22,17 @@ export async function GET(req: NextRequest) {
       })
       .sort({ createdAt: -1 });
 
-    return NextResponse.json(notifications);
+    // Decrypt message content in notifications
+    const decryptedNotifications = notifications.map((notif) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const notifObj = notif.toObject() as any;
+      if (notifObj.message?.content) {
+        notifObj.message.content = decrypt(notifObj.message.content);
+      }
+      return notifObj;
+    });
+
+    return NextResponse.json(decryptedNotifications);
   } catch (error) {
     console.error("Get notifications error:", error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
