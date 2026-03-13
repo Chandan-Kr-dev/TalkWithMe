@@ -35,6 +35,7 @@ export interface ChatData {
     createdAt: string;
   };
   groupAdmin?: ChatUser;
+  groupAdmins?: ChatUser[];
   groupAvatar?: string;
   deletedFor?: string[];
   updatedAt: string;

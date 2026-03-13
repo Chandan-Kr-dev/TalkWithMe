@@ -32,7 +32,14 @@ export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupI
   const [promotingId, setPromotingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const isAdmin = chat.groupAdmin?._id === user?._id;
+  const adminIds = (chat.groupAdmins && chat.groupAdmins.length > 0
+    ? chat.groupAdmins
+    : chat.groupAdmin
+      ? [chat.groupAdmin]
+      : []
+  ).map((a) => a._id);
+
+  const isAdmin = adminIds.includes(user?._id || "");
 
   const updateGroup = async (payload: Record<string, unknown>) => {
     try {
@@ -175,9 +182,18 @@ export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupI
 
   const handleMakeAdmin = async (userId: string) => {
     setPromotingId(userId);
-    const updated = await updateGroup({ newAdminId: userId });
+    const updated = await updateGroup({ addAdminId: userId });
     if (updated) {
-      toast.success("Admin updated");
+      toast.success("Admin added");
+    }
+    setPromotingId(null);
+  };
+
+  const handleRemoveAdmin = async (userId: string) => {
+    setPromotingId(userId);
+    const updated = await updateGroup({ removeAdminId: userId });
+    if (updated) {
+      toast.success("Admin removed");
     }
     setPromotingId(null);
   };
@@ -310,18 +326,28 @@ export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupI
                       {member.name}
                       {member._id === user?._id && " (You)"}
                     </p>
-                    {member._id === chat.groupAdmin?._id && (
+                    {adminIds.includes(member._id) && (
                       <span className="text-xs text-purple-500 font-medium">Admin</span>
                     )}
                   </div>
                   {isAdmin && member._id !== user?._id && (
                     <div className="flex items-center gap-1">
-                      {member._id !== chat.groupAdmin?._id && (
+                      {!adminIds.includes(member._id) && (
                         <button
                           onClick={() => handleMakeAdmin(member._id)}
                           disabled={promotingId === member._id}
                           className="p-1.5 rounded-full hover:bg-purple-50 dark:hover:bg-purple-900/40 text-gray-400 hover:text-purple-500 transition-colors disabled:opacity-50"
                           title="Make admin"
+                        >
+                          <FiUserCheck size={16} />
+                        </button>
+                      )}
+                      {adminIds.includes(member._id) && adminIds.length > 1 && (
+                        <button
+                          onClick={() => handleRemoveAdmin(member._id)}
+                          disabled={promotingId === member._id}
+                          className="p-1.5 rounded-full hover:bg-purple-50 dark:hover:bg-purple-900/40 text-gray-400 hover:text-purple-500 transition-colors disabled:opacity-50"
+                          title="Remove admin"
                         >
                           <FiUserCheck size={16} />
                         </button>

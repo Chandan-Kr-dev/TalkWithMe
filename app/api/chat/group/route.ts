@@ -30,12 +30,14 @@ export async function POST(req: NextRequest) {
       isGroupChat: true,
       users: allUsers,
       groupAdmin: user._id,
+      groupAdmins: [user._id],
       groupAvatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${name}`,
     });
 
     const fullGroupChat = await Chat.findById(groupChat._id)
       .populate("users", "-password")
-      .populate("groupAdmin", "-password");
+      .populate("groupAdmin", "-password")
+      .populate("groupAdmins", "-password");
 
     return NextResponse.json(fullGroupChat, { status: 201 });
   } catch (error) {
@@ -52,7 +54,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ message: "Not authorized" }, { status: 401 });
     }
 
-    const { chatId, chatName, groupAvatar, newAdminId } = await req.json();
+    const { chatId, chatName, groupAvatar, newAdminId, addAdminId, removeAdminId, adminIds } = await req.json();
 
     if (!chatId) {
       return NextResponse.json({ message: "chatId is required" }, { status: 400 });
@@ -65,7 +67,12 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ message: "Chat not found" }, { status: 404 });
     }
 
-    const isAdmin = chat.groupAdmin?.toString() === user._id.toString();
+    const adminList = (chat.groupAdmins && chat.groupAdmins.length > 0
+      ? chat.groupAdmins
+      : [chat.groupAdmin]
+    ).map((id: { toString: () => string }) => id.toString());
+
+    const isAdmin = adminList.includes(user._id.toString());
 
     if (!isAdmin) {
       return NextResponse.json({ message: "Only admin can update the group" }, { status: 403 });
@@ -76,12 +83,45 @@ export async function PUT(req: NextRequest) {
     if (chatName) updatePayload.chatName = chatName;
     if (groupAvatar) updatePayload.groupAvatar = groupAvatar;
 
-    if (newAdminId) {
+    // Full replace of admins if provided
+    if (Array.isArray(adminIds)) {
+      const validIds = adminIds.filter((id: string) => chat.users.some((u) => u.toString() === id));
+      if (validIds.length === 0) {
+        return NextResponse.json({ message: "At least one admin required" }, { status: 400 });
+      }
+      updatePayload.groupAdmins = validIds;
+      updatePayload.groupAdmin = validIds[0];
+    }
+
+    // Backward compatibility: single new admin setter
+    if (newAdminId && !updatePayload.groupAdmins) {
       const isMember = chat.users.some((u: { toString: () => string }) => u.toString() === newAdminId);
       if (!isMember) {
         return NextResponse.json({ message: "New admin must be a group member" }, { status: 400 });
       }
-      updatePayload.groupAdmin = newAdminId;
+      const nextAdmins = Array.from(new Set([...adminList, newAdminId]));
+      updatePayload.groupAdmins = nextAdmins;
+      updatePayload.groupAdmin = nextAdmins[0];
+    }
+
+    // Incremental add/remove admins
+    if (addAdminId) {
+      const isMember = chat.users.some((u: { toString: () => string }) => u.toString() === addAdminId);
+      if (!isMember) {
+        return NextResponse.json({ message: "User must be a group member" }, { status: 400 });
+      }
+      const nextAdmins = Array.from(new Set([...adminList, addAdminId]));
+      updatePayload.groupAdmins = nextAdmins;
+      updatePayload.groupAdmin = nextAdmins[0];
+    }
+
+    if (removeAdminId) {
+      const nextAdmins = adminList.filter((id) => id !== removeAdminId);
+      if (nextAdmins.length === 0) {
+        return NextResponse.json({ message: "At least one admin required" }, { status: 400 });
+      }
+      updatePayload.groupAdmins = nextAdmins;
+      updatePayload.groupAdmin = nextAdmins[0];
     }
 
     if (Object.keys(updatePayload).length === 0) {
@@ -92,7 +132,8 @@ export async function PUT(req: NextRequest) {
       new: true,
     })
       .populate("users", "-password")
-      .populate("groupAdmin", "-password");
+      .populate("groupAdmin", "-password")
+      .populate("groupAdmins", "-password");
 
     return NextResponse.json(updatedChat);
   } catch (error) {

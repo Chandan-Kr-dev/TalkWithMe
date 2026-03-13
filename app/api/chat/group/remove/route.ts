@@ -20,21 +20,35 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ message: "Chat not found" }, { status: 404 });
     }
 
-    // Only admin can remove, or user can leave themselves
-    if (
-      chat.groupAdmin.toString() !== user._id.toString() &&
-      userId !== user._id.toString()
-    ) {
+    const adminIds = (chat.groupAdmins && chat.groupAdmins.length > 0
+      ? chat.groupAdmins
+      : [chat.groupAdmin]
+    ).map((id: { toString: () => string }) => id.toString());
+
+    // Only admin can remove others; anyone can remove self
+    if (!adminIds.includes(user._id.toString()) && userId !== user._id.toString()) {
       return NextResponse.json({ message: "Only admin can remove users" }, { status: 403 });
     }
 
-    const updated = await Chat.findByIdAndUpdate(
-      chatId,
-      { $pull: { users: userId } },
-      { new: true }
-    )
+    // Remove user and adjust admin list if needed
+    const updatedUsers = chat.users.filter((u: { toString: () => string }) => u.toString() !== userId);
+    let updatedAdmins = adminIds.filter((id) => id !== userId);
+
+    if (updatedAdmins.length === 0 && updatedUsers.length > 0) {
+      // Promote first remaining member to keep at least one admin
+      updatedAdmins = [updatedUsers[0].toString()];
+    }
+
+    chat.users = updatedUsers as unknown as typeof chat.users;
+    chat.groupAdmins = updatedAdmins as unknown as typeof chat.groupAdmins;
+    // Keep legacy field in sync
+    chat.groupAdmin = updatedAdmins.length > 0 ? updatedAdmins[0] : chat.groupAdmin;
+    await chat.save();
+
+    const updated = await Chat.findById(chatId)
       .populate("users", "-password")
-      .populate("groupAdmin", "-password");
+      .populate("groupAdmin", "-password")
+      .populate("groupAdmins", "-password");
 
     return NextResponse.json(updated);
   } catch (error) {

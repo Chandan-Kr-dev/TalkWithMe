@@ -6,7 +6,8 @@ export interface IChat extends Document {
   isGroupChat: boolean;
   users: mongoose.Types.ObjectId[];
   latestMessage: mongoose.Types.ObjectId;
-  groupAdmin: mongoose.Types.ObjectId;
+  groupAdmin: mongoose.Types.ObjectId; // legacy single-admin field
+  groupAdmins: mongoose.Types.ObjectId[]; // new multi-admin support
   groupAvatar: string;
   deletedFor: mongoose.Types.ObjectId[];
   createdAt: Date;
@@ -20,6 +21,7 @@ const chatSchema = new Schema<IChat>(
     users: [{ type: Schema.Types.ObjectId, ref: "User" }],
     latestMessage: { type: Schema.Types.ObjectId, ref: "Message" },
     groupAdmin: { type: Schema.Types.ObjectId, ref: "User" },
+    groupAdmins: { type: [{ type: Schema.Types.ObjectId, ref: "User" }], default: [] },
     groupAvatar: { type: String, default: "" },
     deletedFor: {
       type: [{ type: Schema.Types.ObjectId, ref: "User" }],

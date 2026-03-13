@@ -20,7 +20,12 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ message: "Chat not found" }, { status: 404 });
     }
 
-    if (chat.groupAdmin.toString() !== user._id.toString()) {
+    const adminIds = (chat.groupAdmins && chat.groupAdmins.length > 0
+      ? chat.groupAdmins
+      : [chat.groupAdmin]
+    ).map((id: { toString: () => string }) => id.toString());
+
+    if (!adminIds.includes(user._id.toString())) {
       return NextResponse.json({ message: "Only admin can add users" }, { status: 403 });
     }
 
@@ -34,7 +39,8 @@ export async function PUT(req: NextRequest) {
       { new: true }
     )
       .populate("users", "-password")
-      .populate("groupAdmin", "-password");
+      .populate("groupAdmin", "-password")
+      .populate("groupAdmins", "-password");
 
     return NextResponse.json(updated);
   } catch (error) {

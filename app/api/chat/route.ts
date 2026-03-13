@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
     })
       .populate("users", "-password")
       .populate("groupAdmin", "-password")
+      .populate("groupAdmins", "-password")
       .populate({
         path: "latestMessage",
         populate: { path: "sender", select: "name avatar email" },
