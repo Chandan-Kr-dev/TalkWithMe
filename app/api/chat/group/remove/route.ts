@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Types } from "mongoose";
 import connectDB from "@/lib/db";
 import Chat from "@/models/Chat";
 import { getAuthUser } from "@/lib/getAuthUser";
@@ -40,9 +41,10 @@ export async function PUT(req: NextRequest) {
     }
 
     chat.users = updatedUsers as unknown as typeof chat.users;
-    chat.groupAdmins = updatedAdmins as unknown as typeof chat.groupAdmins;
+    const updatedAdminObjectIds = updatedAdmins.map((id) => new Types.ObjectId(id));
+    chat.groupAdmins = updatedAdminObjectIds as unknown as typeof chat.groupAdmins;
     // Keep legacy field in sync
-    chat.groupAdmin = updatedAdmins.length > 0 ? updatedAdmins[0] : chat.groupAdmin;
+    chat.groupAdmin = updatedAdminObjectIds.length > 0 ? updatedAdminObjectIds[0] : chat.groupAdmin;
     await chat.save();
 
     const updated = await Chat.findById(chatId)
