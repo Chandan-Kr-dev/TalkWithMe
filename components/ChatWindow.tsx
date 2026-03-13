@@ -47,6 +47,7 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
+  const [deletingChat, setDeletingChat] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -419,6 +420,60 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
     }
   };
 
+  const handleRemoveChat = async () => {
+    if (!user || !selectedChat || selectedChat.isGroupChat) return;
+    const confirmed = window.confirm(
+      "Delete this chat, remove the contact, and stop them from messaging you?"
+    );
+    if (!confirmed) return;
+
+    setDeletingChat(true);
+    setShowMenu(false);
+    try {
+      const res = await fetch(`/api/chat?chatId=${selectedChat._id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
+      let responseBody: { message?: string; otherUserId?: string } | undefined;
+      try {
+        responseBody = await res.json();
+      } catch (parseError) {
+        console.warn("Delete chat response parse error", parseError);
+      }
+
+      if (!res.ok) {
+        throw new Error(responseBody?.message || "Failed to delete chat");
+      }
+
+      useChatStore.getState().setSelectedChat(null);
+      setMessages([]);
+      onRefreshChats();
+      onBack();
+      const otherUserId = responseBody?.otherUserId;
+      const socket = getSocketInstance();
+      if (otherUserId && socket) {
+        socket.emit("send-notification", {
+          receiverId: otherUserId,
+          notification: {
+            type: "friend-removed",
+            chatId: selectedChat._id,
+            removerId: user._id,
+            removerName: user.name,
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+      toast.success("Chat removed. They cannot message you unless you reconnect.");
+    } catch (error) {
+      console.error("Delete chat error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete chat");
+    } finally {
+      setDeletingChat(false);
+    }
+  };
+
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (messagingLocked) return;
     setNewMessage(e.target.value);
@@ -549,6 +604,20 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
                   className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-gray-800 dark:text-gray-200"
                 >
                   <FiInfo size={16} /> View Profile
+                </button>
+              )}
+              {!selectedChat?.isGroupChat && (
+                <button
+                  onClick={handleRemoveChat}
+                  disabled={deletingChat}
+                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-red-50 dark:hover:bg-red-900/40 flex items-center gap-2 text-red-600 disabled:opacity-60"
+                >
+                  {deletingChat ? (
+                    <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full inline-block animate-spin" />
+                  ) : (
+                    <FiTrash2 size={16} />
+                  )}
+                  <span>Delete & Remove</span>
                 </button>
               )}
               <button

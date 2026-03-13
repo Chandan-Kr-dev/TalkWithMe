@@ -36,6 +36,7 @@ export interface ChatData {
   };
   groupAdmin?: ChatUser;
   groupAvatar?: string;
+  deletedFor?: string[];
   updatedAt: string;
 }
 

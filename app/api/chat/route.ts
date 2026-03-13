@@ -19,7 +19,10 @@ export async function GET(req: NextRequest) {
 
     await connectDB();
 
-    const chats = await Chat.find({ users: { $elemMatch: { $eq: user._id } } })
+    const chats = await Chat.find({
+      users: { $elemMatch: { $eq: user._id } },
+      deletedFor: { $ne: user._id },
+    })
       .populate("users", "-password")
       .populate("groupAdmin", "-password")
       .populate({
@@ -93,6 +96,14 @@ export async function POST(req: NextRequest) {
       });
 
     if (existingChat) {
+      if (existingChat.deletedFor?.some((id) => id.toString() === authUserId)) {
+        await Chat.findByIdAndUpdate(existingChat._id, {
+          $pull: { deletedFor: user._id },
+        });
+        existingChat.deletedFor = existingChat.deletedFor.filter(
+          (id) => id.toString() !== authUserId
+        );
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const chatObj = existingChat.toObject() as any;
       if (chatObj.latestMessage) {
@@ -151,6 +162,77 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(chatObj, { status: 201 });
   } catch (error) {
     console.error("Create chat error:", error);
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
+  }
+}
+
+// DELETE /api/chat?chatId=xxx - Remove a direct chat and unfriend the user
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ message: "Not authorized" }, { status: 401 });
+    }
+
+    const chatId = req.nextUrl.searchParams.get("chatId");
+    if (!chatId) {
+      return NextResponse.json({ message: "chatId param required" }, { status: 400 });
+    }
+
+    await connectDB();
+
+    const chat = await Chat.findById(chatId).select("users isGroupChat");
+    if (!chat) {
+      return NextResponse.json({ message: "Chat not found" }, { status: 404 });
+    }
+
+    if (chat.isGroupChat) {
+      return NextResponse.json({ message: "Group chats cannot be deleted with this action" }, { status: 400 });
+    }
+
+    const authUserId = user._id.toString();
+    const isParticipant = chat.users.some((id) => id.toString() === authUserId);
+    if (!isParticipant) {
+      return NextResponse.json({ message: "You are not part of this chat" }, { status: 403 });
+    }
+
+    const otherUserId = chat.users.find((id) => id.toString() !== authUserId)?.toString();
+    if (!otherUserId) {
+      return NextResponse.json({ message: "Chat participants missing" }, { status: 400 });
+    }
+
+    await Promise.all([
+      Chat.findByIdAndUpdate(chatId, {
+        $addToSet: { deletedFor: user._id },
+      }),
+      User.updateOne(
+        { _id: user._id },
+        {
+          $pull: {
+            friends: otherUserId,
+            incomingRequests: otherUserId,
+            outgoingRequests: otherUserId,
+          },
+        }
+      ),
+      User.updateOne(
+        { _id: otherUserId },
+        {
+          $pull: {
+            friends: user._id,
+            incomingRequests: user._id,
+            outgoingRequests: user._id,
+          },
+        }
+      ),
+    ]);
+
+    return NextResponse.json({
+      message: "Chat hidden for you and contact removed",
+      otherUserId,
+    });
+  } catch (error) {
+    console.error("Delete chat error:", error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }

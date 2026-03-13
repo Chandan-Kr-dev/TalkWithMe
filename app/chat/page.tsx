@@ -125,6 +125,20 @@ export default function ChatPage() {
       fetchChats();
     });
 
+    const handleNotificationReceived = (payload: {
+      type?: string;
+      removerName?: string;
+    }) => {
+      if (payload?.type === "friend-removed") {
+        toast(`${payload.removerName || "A user"} removed you as a friend`, {
+          icon: "🚫",
+        });
+        fetchChats();
+      }
+    };
+
+    socket.on("notification-received", handleNotificationReceived);
+
     // Listen for read receipts to refresh sidebar ticks
     socket.on("messages-read", () => {
       fetchChats();
@@ -140,6 +154,7 @@ export default function ChatPage() {
       socket.off("message-received");
       socket.off("messages-read");
       socket.off("message-delivered");
+      socket.off("notification-received", handleNotificationReceived);
       socketRef.current = null;
     };
   }, [user, notifications, setOnlineUsers, setNotifications, fetchChats]);
