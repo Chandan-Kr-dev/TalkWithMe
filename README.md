@@ -13,7 +13,7 @@ TalkWithMe is a full-stack real-time chat app built with Next.js, Socket.IO, Mon
 ## ✨ Highlights
 
 ### 🔐 Authentication & Account Security
-- Register with name, email, password, and optional avatar upload
+- Register with name, unique username, email, password, and optional avatar upload
 - OTP email verification for new accounts, including resend support
 - Login flow that detects unverified accounts and routes users back to verification
 - Forgot-password flow with email OTP and secure password reset
@@ -26,7 +26,9 @@ TalkWithMe is a full-stack real-time chat app built with Next.js, Socket.IO, Mon
 - Typing indicators for active conversations
 - Delivery and read states with live updates
 - Real-time online/offline presence
+- Direct messaging lock until both users are connected as friends
 - Toast notifications for messages received outside the active chat
+- Message deletion support for your own sent messages
 
 ### 📎 Media & File Sharing
 - Upload chat attachments through Cloudinary
@@ -37,11 +39,15 @@ TalkWithMe is a full-stack real-time chat app built with Next.js, Socket.IO, Mon
 - Avatar uploads with validation and image optimization
 
 ### 👥 Social & Group Features
-- Search users and start chats quickly
+- Search users by username and manage relationship state
+- Friend request flow (send, accept, decline, cancel)
+- Direct chat creation restricted to accepted friendships
 - Create group chats with selected members
+- Group creation restricted to users in your friends list
 - Group admin controls to add or remove members
 - Group info modal with member management
 - Friend profile modal with avatar, email, about text, and presence state
+- “Delete & Remove” action for one-to-one chats that removes both friendship and pending requests
 
 ### 🎨 UX Enhancements
 - Fully responsive auth and chat experience
@@ -77,8 +83,10 @@ TalkWithMe is a full-stack real-time chat app built with Next.js, Socket.IO, Mon
 - Email verification flow with OTP entry screen and resend action
 - Forgot password and reset password flow on the auth page
 - Settings modal with theme switching and password change
-- Chat sidebar with search, notifications, unread indicators, and logout
+- Chat sidebar with username search, friend request inbox, notifications, unread indicators, and logout
 - Chat window with message composer, emoji picker, file uploads, and read receipts
+- Friend-gated direct chat messaging with UI lock/banner until request acceptance
+- Delete your own messages and remove a direct contact from chat actions
 - Friend and group detail modals for richer conversation context
 - Encrypted message storage with real-time delivery updates
 
@@ -107,6 +115,7 @@ talkwithme/
 │       │       ├── route.ts
 │       │       ├── add/route.ts
 │       │       └── remove/route.ts
+│       ├── friends/route.ts
 │       ├── message/
 │       │   ├── route.ts
 │       │   └── read/route.ts
@@ -239,10 +248,16 @@ npm start
 ## 🔄 Core Flows
 
 ### New account flow
-1. Register with name, email, password, and optional avatar
+1. Register with name, username, email, password, and optional avatar
 2. Receive a 6-digit verification code by email
 3. Verify the code on the auth page
 4. Log in and enter the chat workspace
+
+### Friend connection flow
+1. Search a user by username
+2. Send a friend request
+3. Receiver accepts (or declines) in notifications
+4. Once accepted, both users can start/directly continue one-to-one messaging
 
 ### Password recovery flow
 1. Click “Forgot Password?”
@@ -251,10 +266,11 @@ npm start
 4. Return to login with the updated password
 
 ### Messaging flow
-1. Search for a user or open an existing chat
+1. Open an existing chat (or start one after friendship is accepted)
 2. Send text, emoji, image, video, or document messages
 3. Receive live delivery/read state updates through Socket.IO
-4. Get notifications for messages outside the active conversation
+4. Delete your own message if needed
+5. Get notifications for messages outside the active conversation
 
 ---
 
@@ -263,6 +279,7 @@ npm start
 - `npm run dev` is the recommended local command because the chat experience depends on the custom Socket.IO server.
 - File validation happens on both the client and server for safer uploads.
 - The app stores theme preference and user session in Zustand persistence.
+- For one-to-one chats, both users must be friends to exchange messages.
 
 ---
 
