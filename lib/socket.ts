@@ -10,9 +10,12 @@ let io: SocketIOServer | null = null;
 const onlineUsers: OnlineUser[] = [];
 
 const addUser = (userId: string, socketId: string) => {
-  if (!onlineUsers.some((user) => user.userId === userId)) {
-    onlineUsers.push({ userId, socketId });
+  const existing = onlineUsers.find((user) => user.userId === userId);
+  if (existing) {
+    existing.socketId = socketId;
+    return;
   }
+  onlineUsers.push({ userId, socketId });
 };
 
 const removeUser = (socketId: string) => {

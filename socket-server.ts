@@ -9,9 +9,11 @@ interface OnlineUser {
 const onlineUsers: OnlineUser[] = [];
 
 const addUser = (userId: string, socketId: string) => {
-  // Remove existing entry for same user (reconnects)
-  const index = onlineUsers.findIndex((u) => u.userId === userId);
-  if (index !== -1) onlineUsers.splice(index, 1);
+  const existing = onlineUsers.find((u) => u.userId === userId);
+  if (existing) {
+    existing.socketId = socketId;
+    return;
+  }
   onlineUsers.push({ userId, socketId });
 };
 

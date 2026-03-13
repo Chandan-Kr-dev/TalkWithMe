@@ -1,7 +1,7 @@
 "use client";
 
 import { useChatStore, ChatUser } from "@/store/chatStore";
-import { FiX, FiMail, FiInfo, FiMessageCircle, FiAtSign } from "react-icons/fi";
+import { FiX, FiInfo, FiMessageCircle, FiAtSign } from "react-icons/fi";
 
 interface FriendProfileModalProps {
   friendUser: ChatUser;
@@ -76,18 +76,6 @@ export default function FriendProfileModal({ friendUser, onClose }: FriendProfil
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">Username</p>
                 <p className="text-sm text-gray-700 dark:text-gray-200 truncate">@{friendUser.username || "unknown"}</p>
-              </div>
-            </div>
-            {/* Email */}
-            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-              <div className="p-2 bg-rose-100 dark:bg-red-900/40 rounded-lg">
-                <FiMail size={18} className="text-red-400" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">Email</p>
-                <p className="text-sm text-gray-700 dark:text-gray-200 truncate">
-                  {friendUser.email}
-                </p>
               </div>
             </div>
 

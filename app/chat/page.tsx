@@ -91,21 +91,26 @@ export default function ChatPage() {
     const socket = getSocket();
     socketRef.current = socket;
 
-    socket.emit("setup", user._id);
+    const handleConnect = () => {
+      socket.emit("setup", user._id);
+      const activeChatId = selectedChatRef.current?._id;
+      if (activeChatId) {
+        socket.emit("join-chat", activeChatId);
+      }
+    };
 
-    socket.on("online-users", (users: string[]) => {
+    const handleOnlineUsers = (users: string[]) => {
       setOnlineUsers(users);
-    });
+    };
 
-    socket.on("message-received", (newMessage: MessageData) => {
+    const handleMessageReceived = (newMessage: MessageData) => {
       // If not in the chat that received the message, show notification
       if (
         !selectedChatRef.current ||
         selectedChatRef.current._id !== newMessage.chat._id
       ) {
-        const existingNotif = notifications.find(
-          (n) => n.message._id === newMessage._id
-        );
+        const currentNotifications = useChatStore.getState().notifications;
+        const existingNotif = currentNotifications.find((n) => n.message._id === newMessage._id);
         if (!existingNotif) {
           setNotifications([
             {
@@ -116,14 +121,14 @@ export default function ChatPage() {
               isRead: false,
               createdAt: new Date().toISOString(),
             },
-            ...notifications,
+            ...currentNotifications,
           ]);
           toast(`New message from ${newMessage.sender.name}`, { icon: "💬" });
         }
       }
       // Refresh chat list
       fetchChats();
-    });
+    };
 
     const handleNotificationReceived = (payload: {
       type?: string;
@@ -137,27 +142,32 @@ export default function ChatPage() {
       }
     };
 
+    const handleMessagesRead = () => {
+      fetchChats();
+    };
+
+    const handleMessageDelivered = () => {
+      fetchChats();
+    };
+
+    socket.on("connect", handleConnect);
+    handleConnect();
+    socket.on("online-users", handleOnlineUsers);
+    socket.on("message-received", handleMessageReceived);
     socket.on("notification-received", handleNotificationReceived);
-
-    // Listen for read receipts to refresh sidebar ticks
-    socket.on("messages-read", () => {
-      fetchChats();
-    });
-
-    // Listen for delivery updates to refresh sidebar ticks
-    socket.on("message-delivered", () => {
-      fetchChats();
-    });
+    socket.on("messages-read", handleMessagesRead);
+    socket.on("message-delivered", handleMessageDelivered);
 
     return () => {
-      socket.off("online-users");
-      socket.off("message-received");
-      socket.off("messages-read");
-      socket.off("message-delivered");
+      socket.off("connect", handleConnect);
+      socket.off("online-users", handleOnlineUsers);
+      socket.off("message-received", handleMessageReceived);
+      socket.off("messages-read", handleMessagesRead);
+      socket.off("message-delivered", handleMessageDelivered);
       socket.off("notification-received", handleNotificationReceived);
       socketRef.current = null;
     };
-  }, [user, notifications, setOnlineUsers, setNotifications, fetchChats]);
+  }, [user, setOnlineUsers, setNotifications, fetchChats]);
 
   // Fetch chats on mount
   useEffect(() => {

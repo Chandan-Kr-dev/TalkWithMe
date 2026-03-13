@@ -34,6 +34,7 @@ interface SearchResult extends ChatUser {
 }
 
 interface FriendSummaryState {
+  friends: ChatUser[];
   incoming: ChatUser[];
   outgoing: ChatUser[];
 }
@@ -48,11 +49,11 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
   const [showProfile, setShowProfile] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [friendSummary, setFriendSummary] = useState<FriendSummaryState>({ incoming: [], outgoing: [] });
+  const [friendSummary, setFriendSummary] = useState<FriendSummaryState>({ friends: [], incoming: [], outgoing: [] });
 
   const fetchFriendSummary = useCallback(async () => {
     if (!user?.token) {
-      setFriendSummary({ incoming: [], outgoing: [] });
+      setFriendSummary({ friends: [], incoming: [], outgoing: [] });
       return;
     }
     try {
@@ -62,6 +63,7 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
       const data = await res.json();
       if (res.ok) {
         setFriendSummary({
+          friends: data.friends || [],
           incoming: data.incomingRequests || [],
           outgoing: data.outgoingRequests || [],
         });
@@ -125,8 +127,9 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
       if (res.ok) {
         toast.success("Friend request sent");
         updateSearchRelationship(targetId, "outgoing");
-        if (data.incomingRequests || data.outgoingRequests) {
+        if (data.friends || data.incomingRequests || data.outgoingRequests) {
           setFriendSummary({
+            friends: data.friends || [],
             incoming: data.incomingRequests || [],
             outgoing: data.outgoingRequests || [],
           });
@@ -156,8 +159,9 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
       const data = await res.json();
       if (res.ok) {
         toast.success(data.message || (action === "accept" ? "Friend request accepted" : "Friend request declined"));
-        if (data.incomingRequests || data.outgoingRequests) {
+        if (data.friends || data.incomingRequests || data.outgoingRequests) {
           setFriendSummary({
+            friends: data.friends || [],
             incoming: data.incomingRequests || [],
             outgoing: data.outgoingRequests || [],
           });
@@ -249,6 +253,18 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
   };
 
   const totalAlerts = notifications.length + friendSummary.incoming.length;
+  const existingDirectChatUserIds = new Set(
+    chats
+      .filter((chat) => !chat.isGroupChat)
+      .map((chat) => chat.users.find((u) => u._id !== user?._id)?._id)
+      .filter(Boolean) as string[]
+  );
+
+  const friendsReadyToMessage = friendSummary.friends.filter(
+    (friend) => !existingDirectChatUserIds.has(friend._id)
+  );
+
+  const hasAnyListItems = chats.length > 0 || friendsReadyToMessage.length > 0;
 
   return (
     <>
@@ -444,7 +460,6 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                   <div className="text-left flex-1 min-w-0">
                     <p className="font-medium text-gray-800 dark:text-gray-100 text-sm truncate">{result.name}</p>
                     <p className="text-xs text-red-400 font-medium">@{result.username}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{result.email}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-2">
                     {result.relationshipStatus === "friends" && (
@@ -497,88 +512,125 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
 
         {/* Chat List */}
         <div className="flex-1 overflow-y-auto">
-          {chats.length === 0 ? (
+          {hasAnyListItems ? (
+            <>
+              {friendsReadyToMessage.length > 0 && (
+                <div className="border-b border-gray-100 dark:border-gray-800">
+                  <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                    Friends ready to message
+                  </p>
+                  {friendsReadyToMessage.map((friend) => {
+                    const isOnline = onlineUsers.includes(friend._id);
+                    return (
+                      <button
+                        key={friend._id}
+                        onClick={() => handleAccessChat(friend._id)}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all border-b border-gray-50 dark:border-gray-800"
+                      >
+                        <div className="relative">
+                          <img
+                            src={friend.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${friend.username}`}
+                            alt={friend.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                          {isOnline && (
+                            <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className="font-semibold text-gray-800 dark:text-gray-100 text-sm truncate">{friend.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            @{friend.username} • Tap to start chatting
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {chats.map((chat) => {
+                const notifCount = getChatNotificationCount(chat._id);
+                return (
+                  <button
+                    key={chat._id}
+                    onClick={() => onSelectChat(chat)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all border-b border-gray-50 dark:border-gray-800 ${
+                      selectedChat?._id === chat._id ? "bg-rose-50 dark:bg-red-900/30 border-l-4 border-l-red-600" : ""
+                    }`}
+                  >
+                    <div className="relative">
+                      <img
+                        src={getSenderAvatar(chat)}
+                        alt={getSenderName(chat)}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      {isUserOnline(chat) && (
+                        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full" />
+                      )}
+                      {chat.isGroupChat && (
+                        <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-red-600 rounded-full flex items-center justify-center">
+                          <FiUsers size={10} className="text-white" />
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-gray-800 dark:text-gray-100 text-sm truncate">
+                          {getSenderName(chat)}
+                        </p>
+                        {chat.latestMessage && (
+                          <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0 ml-2">
+                            {formatTime(chat.latestMessage.createdAt)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-0.5">
+                          {chat.latestMessage ? (
+                            <>
+                              {chat.latestMessage.sender._id === user?._id && (
+                                <span className="inline-flex items-center shrink-0 mr-0.5">
+                                  {chat.latestMessage.status === "read" ? (
+                                    <span className="text-blue-500 flex">
+                                      <FiCheck size={11} className="-mr-1.5" strokeWidth={3} />
+                                      <FiCheck size={11} strokeWidth={3} />
+                                    </span>
+                                  ) : chat.latestMessage.status === "delivered" ? (
+                                    <span className="text-gray-400 flex">
+                                      <FiCheck size={11} className="-mr-1.5" strokeWidth={3} />
+                                      <FiCheck size={11} strokeWidth={3} />
+                                    </span>
+                                  ) : (
+                                    <FiCheck size={11} strokeWidth={3} className="text-gray-400" />
+                                  )}
+                                </span>
+                              )}
+                              <span className="truncate">
+                                {chat.isGroupChat ? chat.latestMessage.sender.name + ": " : ""}{chat.latestMessage.content}
+                              </span>
+                            </>
+                          ) : (
+                            "No messages yet"
+                          )}
+                        </p>
+                        {notifCount > 0 && (
+                          <span className="ml-2 shrink-0 w-5 h-5 bg-red-600 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                            {notifCount}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </>
+          ) : (
             <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
               <FiEdit2 size={32} className="mb-3" />
               <p className="text-sm">No conversations yet</p>
               <p className="text-xs mt-1">Search for a user to start chatting</p>
             </div>
-          ) : (
-            chats.map((chat) => {
-              const notifCount = getChatNotificationCount(chat._id);
-              return (
-                <button
-                  key={chat._id}
-                  onClick={() => onSelectChat(chat)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all border-b border-gray-50 dark:border-gray-800 ${
-                    selectedChat?._id === chat._id ? "bg-rose-50 dark:bg-red-900/30 border-l-4 border-l-red-600" : ""
-                  }`}
-                >
-                  <div className="relative">
-                    <img
-                      src={getSenderAvatar(chat)}
-                      alt={getSenderName(chat)}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                    {isUserOnline(chat) && (
-                      <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full" />
-                    )}
-                    {chat.isGroupChat && (
-                      <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-red-600 rounded-full flex items-center justify-center">
-                        <FiUsers size={10} className="text-white" />
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold text-gray-800 dark:text-gray-100 text-sm truncate">
-                        {getSenderName(chat)}
-                      </p>
-                      {chat.latestMessage && (
-                        <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0 ml-2">
-                          {formatTime(chat.latestMessage.createdAt)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between mt-0.5">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-0.5">
-                        {chat.latestMessage ? (
-                          <>
-                            {chat.latestMessage.sender._id === user?._id && (
-                              <span className="inline-flex items-center shrink-0 mr-0.5">
-                                {chat.latestMessage.status === "read" ? (
-                                  <span className="text-blue-500 flex">
-                                    <FiCheck size={11} className="-mr-1.5" strokeWidth={3} />
-                                    <FiCheck size={11} strokeWidth={3} />
-                                  </span>
-                                ) : chat.latestMessage.status === "delivered" ? (
-                                  <span className="text-gray-400 flex">
-                                    <FiCheck size={11} className="-mr-1.5" strokeWidth={3} />
-                                    <FiCheck size={11} strokeWidth={3} />
-                                  </span>
-                                ) : (
-                                  <FiCheck size={11} strokeWidth={3} className="text-gray-400" />
-                                )}
-                              </span>
-                            )}
-                            <span className="truncate">
-                              {chat.isGroupChat ? chat.latestMessage.sender.name + ": " : ""}{chat.latestMessage.content}
-                            </span>
-                          </>
-                        ) : (
-                          "No messages yet"
-                        )}
-                      </p>
-                      {notifCount > 0 && (
-                        <span className="ml-2 shrink-0 w-5 h-5 bg-red-600 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                          {notifCount}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              );
-            })
           )}
         </div>
       </div>

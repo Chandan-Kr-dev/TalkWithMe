@@ -21,6 +21,7 @@ import toast from "react-hot-toast";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import GroupInfoModal from "./GroupInfoModal";
 import FriendProfileModal from "./FriendProfileModal";
+import { getSocket } from "@/lib/socketClient";
 
 interface ChatWindowProps {
   socketRef: MutableRefObject<Socket | null> | null;
@@ -55,7 +56,7 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
   const messagingLocked = Boolean(
     selectedChat && !selectedChat.isGroupChat && selectedChat.canMessage === false
   );
-  const getSocketInstance = useCallback(() => socketRef?.current ?? null, [socketRef]);
+  const getSocketInstance = useCallback(() => socketRef?.current ?? getSocket(), [socketRef]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

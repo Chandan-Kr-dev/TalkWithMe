@@ -3,6 +3,10 @@ import connectDB from "@/lib/db";
 import User from "@/models/User";
 import { getAuthUser } from "@/lib/getAuthUser";
 
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 // GET /api/user?search=keyword
 export async function GET(req: NextRequest) {
   try {
@@ -12,7 +16,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: "Not authorized" }, { status: 401 });
     }
 
-    const usernameQuery = req.nextUrl.searchParams.get("username")?.trim().toLowerCase() || "";
+    const rawQuery =
+      req.nextUrl.searchParams.get("username") ||
+      req.nextUrl.searchParams.get("search") ||
+      "";
+    const usernameQuery = rawQuery.trim().toLowerCase();
 
     await connectDB();
 
@@ -20,24 +28,30 @@ export async function GET(req: NextRequest) {
       return NextResponse.json([]);
     }
 
-    const targetUser = await User.findOne({ username: usernameQuery }).select("-password");
-    if (!targetUser || targetUser._id.toString() === user._id.toString()) {
-      return NextResponse.json([]);
-    }
+    const usernameRegex = new RegExp(`^${escapeRegex(usernameQuery)}`, "i");
+    const users = await User.find({
+      _id: { $ne: user._id },
+      username: usernameRegex,
+    })
+      .select("-password")
+      .sort({ username: 1 })
+      .limit(10);
 
-    const relationshipStatus = (() => {
+    const results = users.map((targetUser) => {
       const targetId = targetUser._id.toString();
       const incoming = (user.incomingRequests || []).some((id) => id.toString() === targetId);
       const outgoing = (user.outgoingRequests || []).some((id) => id.toString() === targetId);
       const isFriend = (user.friends || []).some((id) => id.toString() === targetId);
-      if (isFriend) return "friends";
-      if (incoming) return "incoming";
-      if (outgoing) return "outgoing";
-      return "none";
-    })();
 
-    return NextResponse.json([
-      {
+      const relationshipStatus = isFriend
+        ? "friends"
+        : incoming
+        ? "incoming"
+        : outgoing
+        ? "outgoing"
+        : "none";
+
+      return {
         _id: targetUser._id,
         name: targetUser.name,
         username: targetUser.username,
@@ -45,8 +59,10 @@ export async function GET(req: NextRequest) {
         avatar: targetUser.avatar,
         about: targetUser.about,
         relationshipStatus,
-      },
-    ]);
+      };
+    });
+
+    return NextResponse.json(results);
   } catch (error) {
     console.error("Search users error:", error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
