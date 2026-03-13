@@ -21,6 +21,7 @@ import toast from "react-hot-toast";
 import GroupChatModal from "./GroupChatModal";
 import ProfileModal from "./ProfileModal";
 import SettingsModal from "./SettingsModal";
+import PWAInstallButton from "./PWAInstallButton";
 
 interface SidebarProps {
   onSelectChat: (chat: ChatData) => void;
@@ -286,6 +287,7 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
               <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Chats</h2>
             </div>
             <div className="flex items-center gap-0.5 sm:gap-1">
+              <PWAInstallButton />
               {/* Notifications */}
               {/* Theme Toggle */}
               <button
