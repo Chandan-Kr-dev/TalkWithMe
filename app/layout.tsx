@@ -11,10 +11,15 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "TalkWithMe - Real-time Chat",
   description: "A real-time chat application built with Next.js, Socket.IO, and MongoDB",
+  manifest: "/manifest.json",
+  themeColor: "#b91c1c",
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: [
+      { url: "/icons/icon-192.svg", sizes: "192x192", type: "image/svg+xml" },
+      { url: "/icons/icon-512.svg", sizes: "512x512", type: "image/svg+xml" },
+    ],
+    shortcut: "/icons/icon-192.svg",
+    apple: "/icons/icon-192.svg",
   },
   openGraph: {
     title: "Talk With Me",
