@@ -55,6 +55,7 @@ TalkWithMe is a full-stack real-time chat app built with Next.js, Socket.IO, Mon
 - Persisted light and dark theme toggle
 - Modern modal-based settings, profile, and group management flows
 - Emoji picker integrated into the chat composer
+- PWA-ready: installable experience with service worker caching and optional in-app install button
 
 ### 🛡️ Data Protection
 - AES-256-GCM encryption for message content at rest
@@ -89,6 +90,7 @@ TalkWithMe is a full-stack real-time chat app built with Next.js, Socket.IO, Mon
 - Delete your own messages and remove a direct contact from chat actions
 - Friend and group detail modals for richer conversation context
 - Encrypted message storage with real-time delivery updates
+- Progressive Web App install support (manifest + service worker via next-pwa)
 
 ---
 
@@ -239,9 +241,19 @@ npm start
 | `npm run dev` | Start the custom Next.js + Socket.IO development server |
 | `npm run dev:next` | Start plain Next.js dev mode without the custom server |
 | `npm run build` | Build the Next.js app for production |
+| `npm run build:webpack` | Build using webpack (required when deploying next-pwa to Vercel) |
 | `npm start` | Start the production custom server |
 | `npm run socket-server` | Run the alternate Socket.IO server entry manually |
 | `npm run lint` | Run ESLint |
+
+### PWA install behavior
+- The service worker registers only in production over HTTPS.
+- On desktop browsers, install is available via the browser menu; an in-app “Install” button also appears when installable.
+- On Android Chrome, “Install app” shows in the menu or omnibox; on iOS Safari, use Share → Add to Home Screen.
+
+### Deploying with next-pwa
+- Vercel: set build command to `npm run build:webpack` to avoid Turbopack/webpack conflicts with next-pwa.
+- Ensure `manifest.json` and icons are in `public/` (already configured) and served over HTTPS.
 
 ---
 
