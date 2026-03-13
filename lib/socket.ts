@@ -114,6 +114,10 @@ export function initSocket(server: HTTPServer) {
       }
     });
 
+    socket.on("message-deleted", (data: { chatId: string; messageId: string }) => {
+      io?.in(data.chatId).emit("message-deleted", data);
+    });
+
     // Disconnect
     socket.on("disconnect", () => {
       console.log("❌ User disconnected:", socket.id);

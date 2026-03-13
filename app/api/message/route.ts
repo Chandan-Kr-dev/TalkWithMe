@@ -132,3 +132,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }
+
+// DELETE /api/message?messageId=xxx - Delete a message sent by the authenticated user
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return NextResponse.json({ message: "Not authorized" }, { status: 401 });
+    }
+
+    const messageId = req.nextUrl.searchParams.get("messageId");
+    if (!messageId) {
+      return NextResponse.json({ message: "messageId required" }, { status: 400 });
+    }
+
+    await connectDB();
+
+    const message = await Message.findById(messageId).select("sender chat");
+    if (!message) {
+      return NextResponse.json({ message: "Message not found" }, { status: 404 });
+    }
+
+    if (message.sender.toString() !== user._id.toString()) {
+      return NextResponse.json({ message: "You can only delete your own messages" }, { status: 403 });
+    }
+
+    const chatId = message.chat.toString();
+
+    await Message.findByIdAndDelete(messageId);
+
+    const chat = await Chat.findById(chatId).select("latestMessage");
+    if (chat && chat.latestMessage?.toString() === messageId) {
+      const replacementMessage = await Message.findOne({ chat: chatId })
+        .sort({ createdAt: -1 })
+        .select("_id");
+      await Chat.findByIdAndUpdate(chatId, {
+        latestMessage: replacementMessage?._id ?? null,
+      });
+    }
+
+    return NextResponse.json({ message: "Message deleted" });
+  } catch (error) {
+    console.error("Delete message error:", error);
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
+  }
+}

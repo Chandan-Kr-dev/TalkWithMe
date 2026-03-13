@@ -14,6 +14,7 @@ import {
   FiFile,
   FiDownload,
   FiCheck,
+  FiTrash2,
 } from "react-icons/fi";
 import { Socket } from "socket.io-client";
 import toast from "react-hot-toast";
@@ -43,6 +44,7 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -209,11 +211,19 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
       if (room === selectedChat?._id) setIsTyping(false);
     };
 
+    const handleMessageDeleted = (data: { messageId: string; chatId: string }) => {
+      if (data.chatId === selectedChat?._id) {
+        setMessages((prev) => prev.filter((m) => m._id !== data.messageId));
+      }
+      onRefreshChatsRef.current();
+    };
+
     socket.on("message-received", handleMessageReceived);
     socket.on("message-delivered", handleMessageDelivered);
     socket.on("messages-read", handleMessagesRead);
     socket.on("typing", handleTyping);
     socket.on("stop-typing", handleStopTyping);
+    socket.on("message-deleted", handleMessageDeleted);
 
     return () => {
       socket.off("message-received", handleMessageReceived);
@@ -221,6 +231,7 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
       socket.off("messages-read", handleMessagesRead);
       socket.off("typing", handleTyping);
       socket.off("stop-typing", handleStopTyping);
+      socket.off("message-deleted", handleMessageDeleted);
     };
   }, [getSocketInstance, selectedChat]);
 
@@ -366,6 +377,43 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
       toast.error("Failed to send file");
     } finally {
       setUploadingFile(false);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!user || !selectedChat) return;
+    const confirmed = window.confirm("Delete this message for everyone?");
+    if (!confirmed) return;
+
+    setDeletingMessageId(messageId);
+    try {
+      const res = await fetch(`/api/message?messageId=${messageId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
+      let responseBody: { message?: string } | undefined;
+      try {
+        responseBody = await res.json();
+      } catch (parseError) {
+        console.warn("Delete message response parse error", parseError);
+      }
+
+      if (!res.ok) {
+        throw new Error(responseBody?.message || "Failed to delete message");
+      }
+
+      setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+      const socket = getSocketInstance();
+      socket?.emit("message-deleted", { chatId: selectedChat._id, messageId });
+      onRefreshChats();
+      toast.success("Message deleted");
+    } catch (error) {
+      console.error("Delete message error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete message");
+    } finally {
+      setDeletingMessageId(null);
     }
   };
 
@@ -542,6 +590,7 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
                 !isMe &&
                 (idx === messages.length - 1 ||
                   messages[idx + 1]?.sender._id !== msg.sender._id);
+              const isDeleting = deletingMessageId === msg._id;
 
               return (
                 <div key={msg._id}>
@@ -562,12 +611,27 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
                     )}
                     {!isMe && !showAvatar && <div className="w-7 mr-2" />}
                     <div
-                      className={`max-w-[85%] sm:max-w-[70%] px-3.5 py-2 rounded-2xl ${
+                      className={`relative group max-w-[85%] sm:max-w-[70%] px-3.5 py-2 rounded-2xl ${
                         isMe
                           ? "bg-purple-500 text-white rounded-br-md"
                           : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-bl-md shadow-sm"
                       }`}
                     >
+                      {isMe && (
+                        <button
+                          type="button"
+                          aria-label="Delete message"
+                          onClick={() => handleDeleteMessage(msg._id)}
+                          disabled={isDeleting}
+                          className="absolute -top-2 -right-2 p-1 rounded-full bg-black/30 text-white hover:bg-black/40 transition-opacity opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 disabled:opacity-60"
+                        >
+                          {isDeleting ? (
+                            <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full inline-block animate-spin" />
+                          ) : (
+                            <FiTrash2 size={12} />
+                          )}
+                        </button>
+                      )}
                       {selectedChat?.isGroupChat && !isMe && (
                         <p className="text-xs font-semibold mb-0.5 text-purple-400">
                           {msg.sender.name}
