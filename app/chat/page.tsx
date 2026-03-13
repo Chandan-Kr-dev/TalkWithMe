@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { Caveat } from "next/font/google";
 import { useRouter } from "next/navigation";
 import { useChatStore, ChatData, MessageData } from "@/store/chatStore";
 import { getSocket, disconnectSocket } from "@/lib/socketClient";
@@ -9,6 +10,8 @@ import ChatWindow from "@/components/ChatWindow";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import toast, { Toaster } from "react-hot-toast";
 import { Socket } from "socket.io-client";
+
+const caveat = Caveat({ weight: "400", subsets: ["latin"] });
 
 export default function ChatPage() {
   const router = useRouter();
@@ -205,6 +208,20 @@ export default function ChatPage() {
     setShowSidebar(true);
   }, [isMobileView, showSidebar]);
 
+  const shouldShowSidebar = !isMobileView || showSidebar || !selectedChat;
+  const shouldShowChatArea = !isMobileView || !shouldShowSidebar;
+
+  // Hide global footer entirely on chat page (we render a sidebar-only footer below)
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--footer-display", "none");
+    root.style.setProperty("--footer-height", "0px");
+    return () => {
+      root.style.removeProperty("--footer-display");
+      root.style.removeProperty("--footer-height");
+    };
+  }, []);
+
   if (!_hasHydrated || !user) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-100 dark:bg-gray-950">
@@ -213,19 +230,23 @@ export default function ChatPage() {
     );
   }
 
-  const shouldShowSidebar = !isMobileView || showSidebar || !selectedChat;
-  const shouldShowChatArea = !isMobileView || !shouldShowSidebar;
-
   return (
     <div className="flex h-screen bg-rose-50 dark:bg-[#050304] overflow-hidden">
       <Toaster position="top-center" />
 
-      {/* Sidebar */}
+      {/* Sidebar with dedicated footer (shown on mobile friends list and always on desktop) */}
       {shouldShowSidebar && (
-        <Sidebar
-          onSelectChat={handleSelectChat}
-          onRefreshChats={fetchChats}
-        />
+        <div className="flex w-full md:w-104 h-full flex-col border-r border-(--border) bg-(--surface)">
+          <Sidebar
+            onSelectChat={handleSelectChat}
+            onRefreshChats={fetchChats}
+          />
+          <footer className="mt-auto h-18 border-t border-(--border) bg-(--surface) text-base text-center text-foreground flex items-center justify-center px-4">
+            <span className={`font-semibold text-lg text-(--accent-strong) ${caveat.className}`}>
+              Made with love by Chandan Kr
+            </span>
+          </footer>
+        </div>
       )}
 
       {/* Chat Area */}

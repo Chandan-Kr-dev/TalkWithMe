@@ -54,7 +54,10 @@ export default function RootLayout({
             >
               {children}
             </main>
-            <footer className="sticky bottom-0 mt-auto h-(--footer-height) border-t border-(--border) bg-(--surface) text-base text-center text-foreground flex items-center justify-center px-4">
+            <footer
+              className="sticky bottom-0 mt-auto h-(--footer-height) border-t border-(--border) bg-(--surface) text-base text-center text-foreground flex items-center justify-center px-4"
+              style={{ display: "var(--footer-display, flex)" }}
+            >
               <span className={`font-semibold text-lg text-(--accent-strong) ${caveat.className}`}>
                 Made with love by Chandan Kr
               </span>
