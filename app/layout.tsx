@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Caveat, Inter } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 
 const inter = Inter({
   variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const caveat = Caveat({
+  weight: "400",
+  variable: "--font-script",
   subsets: ["latin"],
 });
 
@@ -36,8 +42,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className={`${inter.variable} ${caveat.variable} font-sans antialiased`}>
+        <ThemeProvider>
+          <div className="min-h-screen flex flex-col">
+            <main className="flex-1 pb-20">{children}</main>
+            <footer className="fixed inset-x-0 bottom-0 border-t border-(--border) bg-(--surface) text-base text-center text-foreground py-4 px-4">
+              <span className={`font-semibold text-lg text-(--accent-strong) ${caveat.className}`}>
+                Made with love by Chandan Kr
+              </span>
+            </footer>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );
