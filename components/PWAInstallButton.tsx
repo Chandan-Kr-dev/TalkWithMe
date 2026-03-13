@@ -59,10 +59,10 @@ export default function PWAInstallButton() {
   return (
     <button
       onClick={handleInstall}
-      className="px-3 py-2 rounded-full bg-red-600 text-white text-xs font-semibold hover:bg-red-700 flex items-center gap-1 shadow-sm"
+      className="px-2.5 py-1.5 rounded-full bg-red-600 text-white text-[11px] font-semibold hover:bg-red-700 flex items-center gap-1"
       title="Install app"
     >
-      <FiDownload size={16} />
+      <FiDownload size={14} />
       Install
     </button>
   );
