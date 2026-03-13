@@ -14,6 +14,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: "Not authorized" }, { status: 401 });
     }
 
+    const authUserId = user._id.toString();
+    const friendIdSet = new Set<string>((user.friends || []).map((id) => id.toString()));
+
     await connectDB();
 
     const chats = await Chat.find({ users: { $elemMatch: { $eq: user._id } } })
@@ -42,6 +45,14 @@ export async function GET(req: NextRequest) {
           chatObj.latestMessage.status = otherReaders.length > 0 ? "read" : "sent";
         }
       }
+      if (chatObj.isGroupChat) {
+        chatObj.canMessage = true;
+      } else {
+        const otherUser = chatObj.users?.find(
+          (u: { _id: { toString: () => string } }) => u._id.toString() !== authUserId
+        );
+        chatObj.canMessage = otherUser ? friendIdSet.has(otherUser._id.toString()) : false;
+      }
       return chatObj;
     });
 
@@ -59,6 +70,9 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ message: "Not authorized" }, { status: 401 });
     }
+
+    const authUserId = user._id.toString();
+    const friendIdSet = new Set<string>((user.friends || []).map((id) => id.toString()));
 
     const { userId } = await req.json();
     if (!userId) {
@@ -93,11 +107,32 @@ export async function POST(req: NextRequest) {
           chatObj.latestMessage.status = otherReaders.length > 0 ? "read" : "sent";
         }
       }
+      if (chatObj.isGroupChat) {
+        chatObj.canMessage = true;
+      } else {
+        const otherUser = chatObj.users?.find(
+          (u: { _id: { toString: () => string } }) => u._id.toString() !== authUserId
+        );
+        chatObj.canMessage = otherUser ? friendIdSet.has(otherUser._id.toString()) : false;
+      }
       return NextResponse.json(chatObj);
     }
 
-    // Create new chat
     const otherUser = await User.findById(userId);
+    if (!otherUser) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
+    const otherUserId = otherUser._id.toString();
+    const otherHasFriend = (otherUser.friends || []).some((id) => id.toString() === authUserId);
+    if (!friendIdSet.has(otherUserId) || !otherHasFriend) {
+      return NextResponse.json(
+        { message: "Send a friend request and wait for it to be accepted before starting a chat" },
+        { status: 403 }
+      );
+    }
+
+    // Create new chat
     const chatData = {
       chatName: otherUser?.name || "Chat",
       isGroupChat: false,
@@ -107,7 +142,13 @@ export async function POST(req: NextRequest) {
     const createdChat = await Chat.create(chatData);
     const fullChat = await Chat.findById(createdChat._id).populate("users", "-password");
 
-    return NextResponse.json(fullChat, { status: 201 });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const chatObj = fullChat?.toObject() as any;
+    if (chatObj) {
+      chatObj.canMessage = true;
+    }
+
+    return NextResponse.json(chatObj, { status: 201 });
   } catch (error) {
     console.error("Create chat error:", error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });

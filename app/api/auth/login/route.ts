@@ -1,9 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomInt } from "crypto";
 import connectDB from "@/lib/db";
-import User from "@/models/User";
+import User, { IUser } from "@/models/User";
 import { generateToken } from "@/lib/auth";
 import { sendVerificationOTP } from "@/lib/mailer";
+
+async function ensureUsername(user: IUser) {
+  if (user.username) return;
+
+  const sanitize = (value: string) =>
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9_]/g, "")
+      .slice(0, 30);
+
+  const emailLocalPart = user.email?.split("@")[0] || "";
+  let base = sanitize(emailLocalPart || user.name || "user");
+  if (!base) {
+    base = `user${user._id.toString().slice(-4)}`;
+  }
+
+  let candidate = base;
+  let suffix = 0;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const exists = await User.exists({ username: candidate });
+    if (!exists) break;
+    suffix += 1;
+    const suffixStr = suffix.toString();
+    const trimmedBase = base.slice(0, Math.max(0, 30 - suffixStr.length));
+    candidate = `${trimmedBase}${suffixStr}`;
+  }
+
+  user.username = candidate;
+}
 
 // POST /api/auth/login
 export async function POST(req: NextRequest) {
@@ -28,6 +59,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
     }
 
+    await ensureUsername(user);
+
     if (!user.isVerified) {
       // Send a fresh OTP so user can verify right now
       const otp = randomInt(100000, 999999).toString();
@@ -42,6 +75,8 @@ export async function POST(req: NextRequest) {
           message: "Your email is not verified. We've sent a new verification code.",
           needsVerification: true,
           email: user.email,
+          name: user.name,
+          username: user.username,
         },
         { status: 403 }
       );
@@ -56,6 +91,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       _id: user._id,
       name: user.name,
+      username: user.username,
       email: user.email,
       avatar: user.avatar,
       about: user.about,

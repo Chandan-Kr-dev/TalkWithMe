@@ -4,6 +4,7 @@ import { persist } from "zustand/middleware";
 export interface UserInfo {
   _id: string;
   name: string;
+  username: string;
   email: string;
   avatar: string;
   about: string;
@@ -13,6 +14,7 @@ export interface UserInfo {
 export interface ChatUser {
   _id: string;
   name: string;
+  username: string;
   email: string;
   avatar: string;
   about?: string;
@@ -24,10 +26,11 @@ export interface ChatData {
   chatName: string;
   isGroupChat: boolean;
   users: ChatUser[];
+  canMessage?: boolean;
   latestMessage?: {
     _id: string;
     content: string;
-    sender: { _id: string; name: string; avatar: string };
+    sender: { _id: string; name: string; username?: string; avatar: string };
     status?: "sent" | "delivered" | "read";
     createdAt: string;
   };
@@ -38,7 +41,7 @@ export interface ChatData {
 
 export interface MessageData {
   _id: string;
-  sender: { _id: string; name: string; avatar: string; email: string };
+  sender: { _id: string; name: string; username?: string; avatar: string; email: string };
   content: string;
   chat: ChatData;
   readBy: string[];

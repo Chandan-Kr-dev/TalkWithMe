@@ -42,11 +42,6 @@ export default function ChatPage() {
   }, []);
 
   // Show sidebar when no chat selected on mobile
-  useEffect(() => {
-    if (isMobileView && !selectedChat) {
-      setShowSidebar(true);
-    }
-  }, [selectedChat, isMobileView]);
 
   const fetchChats = useCallback(async () => {
     if (!user) return;
@@ -55,7 +50,16 @@ export default function ChatPage() {
         headers: { Authorization: `Bearer ${user.token}` },
       });
       const data = await res.json();
-      if (res.ok) setChats(data);
+      if (res.ok) {
+        setChats(data);
+        const currentSelectedId = useChatStore.getState().selectedChat?._id;
+        if (currentSelectedId) {
+          const updatedChat = data.find((chat: ChatData) => chat._id === currentSelectedId);
+          if (updatedChat) {
+            useChatStore.getState().setSelectedChat(updatedChat);
+          }
+        }
+      }
     } catch (error) {
       console.error("Fetch chats error:", error);
     }
@@ -117,6 +121,7 @@ export default function ChatPage() {
       socket.off("message-received");
       socket.off("messages-read");
       socket.off("message-delivered");
+      socketRef.current = null;
     };
   }, [user, notifications, setOnlineUsers, setNotifications, fetchChats]);
 
@@ -154,12 +159,15 @@ export default function ChatPage() {
     setNotifications(updatedNotifications);
   };
 
+  const shouldShowSidebar = !isMobileView || showSidebar || !selectedChat;
+  const shouldShowChatArea = !isMobileView || !shouldShowSidebar;
+
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-950 overflow-hidden">
       <Toaster position="top-center" />
 
       {/* Sidebar */}
-      {(!isMobileView || showSidebar) && (
+      {shouldShowSidebar && (
         <Sidebar
           onSelectChat={handleSelectChat}
           onRefreshChats={fetchChats}
@@ -167,11 +175,11 @@ export default function ChatPage() {
       )}
 
       {/* Chat Area */}
-      {(!isMobileView || !showSidebar) && (
+      {shouldShowChatArea && (
         <div className="flex-1 flex flex-col">
           {selectedChat ? (
             <ChatWindow
-              socket={socketRef.current}
+              socketRef={socketRef}
               onBack={() => {
                 if (isMobileView) setShowSidebar(true);
               }}

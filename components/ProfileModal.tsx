@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useChatStore } from "@/store/chatStore";
-import { FiX, FiEdit2, FiMail, FiClock, FiCamera } from "react-icons/fi";
+import { FiX, FiEdit2, FiMail, FiClock, FiCamera, FiAtSign } from "react-icons/fi";
 import toast from "react-hot-toast";
 
 interface ProfileModalProps {
@@ -197,6 +197,10 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
 
           {!isEditing && (
             <div className="space-y-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3 text-sm">
+                <FiAtSign size={16} className="text-gray-400 dark:text-gray-500" />
+                <span className="text-gray-600 dark:text-gray-300">@{user?.username || "unknown"}</span>
+              </div>
               <div className="flex items-center gap-3 text-sm">
                 <FiMail size={16} className="text-gray-400 dark:text-gray-500" />
                 <span className="text-gray-600 dark:text-gray-300">{user?.email}</span>

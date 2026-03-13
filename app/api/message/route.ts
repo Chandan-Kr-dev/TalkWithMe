@@ -61,6 +61,36 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
+    const chat = await Chat.findById(chatId).select("users isGroupChat");
+    if (!chat) {
+      return NextResponse.json({ message: "Chat not found" }, { status: 404 });
+    }
+
+    const authUserId = user._id.toString();
+    const isParticipant = chat.users.some((id) => id.toString() === authUserId);
+    if (!isParticipant) {
+      return NextResponse.json({ message: "You are not part of this chat" }, { status: 403 });
+    }
+
+    if (!chat.isGroupChat) {
+      const otherUserId = chat.users.find((id) => id.toString() !== authUserId)?.toString();
+      if (!otherUserId) {
+        return NextResponse.json({ message: "Chat participants missing" }, { status: 400 });
+      }
+
+      const otherUser = await User.findById(otherUserId).select("friends");
+      const currentFriends = new Set<string>((user.friends || []).map((id) => id.toString()));
+      const otherIsFriend = currentFriends.has(otherUserId);
+      const reciprocalFriend = (otherUser?.friends || []).some((id) => id.toString() === authUserId);
+
+      if (!otherIsFriend || !reciprocalFriend) {
+        return NextResponse.json(
+          { message: "Friend request pending. Wait for acceptance before messaging." },
+          { status: 403 }
+        );
+      }
+    }
+
     // Use a default content for file-only messages, then encrypt
     const messageContent = content || (fileType === "image" ? "📷 Photo" : fileType === "video" ? "🎥 Video" : "📎 Document");
     const encryptedContent = encrypt(messageContent);
@@ -79,7 +109,7 @@ export async function POST(req: NextRequest) {
       messageData.fileName = fileName;
     }
 
-    let message = await Message.create(messageData);
+    const message = await Message.create(messageData);
 
     await message.populate("sender", "name avatar email");
     await message.populate("chat");

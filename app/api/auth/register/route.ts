@@ -11,18 +11,36 @@ function generateOTP(): string {
 // POST /api/auth/register
 export async function POST(req: NextRequest) {
   try {
-    const { name, email: rawEmail, password, avatar } = await req.json();
+    const { name, username: rawUsername, email: rawEmail, password, avatar } = await req.json();
 
-    if (!name || !rawEmail || !password) {
+    if (!name || !rawEmail || !password || !rawUsername) {
       return NextResponse.json({ message: "Please fill all fields" }, { status: 400 });
     }
 
     const email = rawEmail.toLowerCase().trim();
+    const username = rawUsername.trim().toLowerCase();
+
+    if (!/^[a-z0-9_]{3,30}$/.test(username)) {
+      return NextResponse.json(
+        { message: "Username must be 3-30 characters and include only letters, numbers, or underscores" },
+        { status: 400 }
+      );
+    }
 
     await connectDB();
 
-    const userExists = await User.findOne({ email });
+    const [userExists, usernameTaken] = await Promise.all([
+      User.findOne({ email }),
+      User.findOne({ username }),
+    ]);
+
+    const usernameConflict =
+      !!usernameTaken && (!userExists || usernameTaken._id.toString() !== userExists._id.toString());
+
     if (userExists) {
+      if (usernameConflict) {
+        return NextResponse.json({ message: "Username is already taken" }, { status: 400 });
+      }
       // If existing user hasn't verified, allow re-sending the OTP
       if (!userExists.isVerified) {
         const otp = generateOTP();
@@ -40,14 +58,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "User already exists" }, { status: 400 });
     }
 
+    if (usernameConflict) {
+      return NextResponse.json({ message: "Username is already taken" }, { status: 400 });
+    }
+
     // Generate 6-digit OTP (10 min expiry)
     const otp = generateOTP();
 
     const user = await User.create({
       name,
+      username,
       email,
       password,
-      avatar: avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
+      avatar: avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
       verificationToken: otp,
       verificationTokenExpiry: new Date(Date.now() + 10 * 60 * 1000),
     });

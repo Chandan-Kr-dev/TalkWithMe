@@ -10,38 +10,55 @@ interface GroupChatModalProps {
   onRefreshChats: () => void;
 }
 
+type GroupSearchResult = ChatUser & {
+  relationshipStatus: "friends" | "incoming" | "outgoing" | "none";
+};
+
 export default function GroupChatModal({ onClose, onRefreshChats }: GroupChatModalProps) {
   const { user } = useChatStore();
   const [groupName, setGroupName] = useState("");
   const [search, setSearch] = useState("");
-  const [searchResults, setSearchResults] = useState<ChatUser[]>([]);
+  const [searchResults, setSearchResults] = useState<GroupSearchResult[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<ChatUser[]>([]);
   const [loading, setLoading] = useState(false);
 
   const handleSearch = async (query: string) => {
     setSearch(query);
-    if (!query.trim()) {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) {
       setSearchResults([]);
       return;
     }
 
     try {
-      const res = await fetch(`/api/user?search=${query}`, {
+      const res = await fetch(`/api/user?username=${encodeURIComponent(normalized)}`, {
         headers: { Authorization: `Bearer ${user?.token}` },
       });
       const data = await res.json();
-      if (res.ok) setSearchResults(data);
+      if (res.ok) setSearchResults(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Search error:", error);
     }
   };
 
-  const addUser = (userToAdd: ChatUser) => {
+  const addUser = (userToAdd: GroupSearchResult) => {
+    if (userToAdd.relationshipStatus !== "friends") {
+      toast.error("You can only add friends to a group chat");
+      return;
+    }
     if (selectedUsers.some((u) => u._id === userToAdd._id)) {
       toast.error("User already added");
       return;
     }
-    setSelectedUsers([...selectedUsers, userToAdd]);
+    const cleanUser: ChatUser = {
+      _id: userToAdd._id,
+      name: userToAdd.name,
+      username: userToAdd.username,
+      email: userToAdd.email,
+      avatar: userToAdd.avatar,
+      about: userToAdd.about,
+    };
+    setSelectedUsers([...selectedUsers, cleanUser]);
   };
 
   const removeUser = (userId: string) => {
@@ -114,7 +131,7 @@ export default function GroupChatModal({ onClose, onRefreshChats }: GroupChatMod
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={16} />
             <input
               type="text"
-              placeholder="Add users (e.g. John, Jane)"
+              placeholder="Add users by username"
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-600 focus:bg-white dark:focus:bg-gray-700 transition-all"
@@ -141,23 +158,34 @@ export default function GroupChatModal({ onClose, onRefreshChats }: GroupChatMod
           {/* Search Results */}
           {searchResults.length > 0 && (
             <div className="max-h-40 overflow-y-auto space-y-1">
-              {searchResults.map((u) => (
-                <button
-                  key={u._id}
-                  onClick={() => addUser(u)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-xl transition-all"
-                >
-                  <img
-                    src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.name}`}
-                    alt={u.name}
-                    className="w-9 h-9 rounded-full"
-                  />
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{u.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{u.email}</p>
-                  </div>
-                </button>
-              ))}
+              {searchResults.map((u) => {
+                const disabled = u.relationshipStatus !== "friends";
+                return (
+                  <button
+                    key={u._id}
+                    onClick={() => addUser(u)}
+                    disabled={disabled}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+                      disabled
+                        ? "bg-gray-50 dark:bg-gray-900/30 text-gray-400 cursor-not-allowed"
+                        : "hover:bg-purple-50 dark:hover:bg-purple-900/30"
+                    }`}
+                  >
+                    <img
+                      src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`}
+                      alt={u.name}
+                      className="w-9 h-9 rounded-full"
+                    />
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{u.name}</p>
+                      <p className="text-xs text-purple-500">@{u.username}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {disabled ? "Friend request required" : u.email}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
 

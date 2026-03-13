@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
   name: string;
+  username: string;
   email: string;
   password: string;
   avatar: string;
@@ -15,6 +16,9 @@ export interface IUser extends Document {
   resetToken: string | null;
   resetTokenExpiry: Date | null;
   lastSeen: Date;
+  friends: mongoose.Types.ObjectId[];
+  incomingRequests: mongoose.Types.ObjectId[];
+  outgoingRequests: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
   matchPassword(enteredPassword: string): Promise<boolean>;
@@ -23,6 +27,15 @@ export interface IUser extends Document {
 const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true, trim: true },
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+      minlength: 3,
+      maxlength: 30,
+    },
     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
     password: { type: String, required: true, minlength: 6 },
     avatar: {
@@ -37,6 +50,18 @@ const userSchema = new Schema<IUser>(
     resetToken: { type: String, default: null },
     resetTokenExpiry: { type: Date, default: null },
     lastSeen: { type: Date, default: Date.now },
+    friends: {
+      type: [{ type: Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+    },
+    incomingRequests: {
+      type: [{ type: Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+    },
+    outgoingRequests: {
+      type: [{ type: Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+    },
   },
   { timestamps: true }
 );

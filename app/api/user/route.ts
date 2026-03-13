@@ -12,25 +12,41 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: "Not authorized" }, { status: 401 });
     }
 
-    const search = req.nextUrl.searchParams.get("search") || "";
+    const usernameQuery = req.nextUrl.searchParams.get("username")?.trim().toLowerCase() || "";
 
     await connectDB();
 
-    const keyword = search
-      ? {
-          $or: [
-            { name: { $regex: search, $options: "i" } },
-            { email: { $regex: search, $options: "i" } },
-          ],
-        }
-      : {};
+    if (!usernameQuery) {
+      return NextResponse.json([]);
+    }
 
-    const users = await User.find({
-      ...keyword,
-      _id: { $ne: user._id },
-    }).select("-password");
+    const targetUser = await User.findOne({ username: usernameQuery }).select("-password");
+    if (!targetUser || targetUser._id.toString() === user._id.toString()) {
+      return NextResponse.json([]);
+    }
 
-    return NextResponse.json(users);
+    const relationshipStatus = (() => {
+      const targetId = targetUser._id.toString();
+      const incoming = (user.incomingRequests || []).some((id) => id.toString() === targetId);
+      const outgoing = (user.outgoingRequests || []).some((id) => id.toString() === targetId);
+      const isFriend = (user.friends || []).some((id) => id.toString() === targetId);
+      if (isFriend) return "friends";
+      if (incoming) return "incoming";
+      if (outgoing) return "outgoing";
+      return "none";
+    })();
+
+    return NextResponse.json([
+      {
+        _id: targetUser._id,
+        name: targetUser.name,
+        username: targetUser.username,
+        email: targetUser.email,
+        avatar: targetUser.avatar,
+        about: targetUser.about,
+        relationshipStatus,
+      },
+    ]);
   } catch (error) {
     console.error("Search users error:", error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
@@ -63,6 +79,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({
       _id: user._id,
       name: user.name,
+      username: user.username,
       email: user.email,
       avatar: user.avatar,
       about: user.about,

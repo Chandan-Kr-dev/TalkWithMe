@@ -20,6 +20,7 @@ export default function AuthPage() {
 
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -82,6 +83,16 @@ export default function AuthPage() {
           return;
         }
 
+        const normalizedUsername = username.trim();
+        const usernamePattern = /^[a-z0-9_]{3,30}$/i;
+        if (!usernamePattern.test(normalizedUsername)) {
+          toast.error("Username must be 3-30 characters using letters, numbers, or underscores");
+          setLoading(false);
+          return;
+        }
+
+        const payloadUsername = normalizedUsername.toLowerCase();
+
         // Upload avatar if selected
         let avatarUrl: string | undefined;
         if (avatarFile) {
@@ -102,7 +113,7 @@ export default function AuthPage() {
         const res = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password, avatar: avatarUrl }),
+          body: JSON.stringify({ name, username: payloadUsername, email, password, avatar: avatarUrl }),
         });
 
         const data = await res.json();
@@ -124,6 +135,8 @@ export default function AuthPage() {
           // If email not verified, show OTP screen
           if (res.status === 403 && data.needsVerification) {
             setVerifyEmail(data.email || email);
+            if (data.name) setName(data.name);
+            if (data.username) setUsername(data.username);
             setShowOtpScreen(true);
             toast.success(data.message);
             return;
@@ -491,7 +504,12 @@ export default function AuthPage() {
                     const res = await fetch("/api/auth/register", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ name, email, password }),
+                      body: JSON.stringify({
+                        name,
+                        username: username.trim().toLowerCase(),
+                        email,
+                        password,
+                      }),
                     });
                     const data = await res.json();
                     if (res.ok) {
@@ -599,6 +617,22 @@ export default function AuthPage() {
                     placeholder="Enter your name"
                     required
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white/80 mb-1.5">Username</label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                    placeholder="Choose a unique username"
+                    required
+                    minLength={3}
+                    maxLength={30}
+                    autoComplete="username"
+                  />
+                  <p className="text-xs text-white/50 mt-1">Use 3-30 letters, numbers, or underscores.</p>
                 </div>
               </>
             )}

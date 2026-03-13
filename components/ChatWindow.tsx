@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, MutableRefObject } from "react";
 import { useChatStore, MessageData, ChatData } from "@/store/chatStore";
 import {
   FiArrowLeft,
@@ -22,13 +22,13 @@ import GroupInfoModal from "./GroupInfoModal";
 import FriendProfileModal from "./FriendProfileModal";
 
 interface ChatWindowProps {
-  socket: Socket | null;
+  socketRef: MutableRefObject<Socket | null> | null;
   onBack: () => void;
   isMobile: boolean;
   onRefreshChats: () => void;
 }
 
-export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }: ChatWindowProps) {
+export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats }: ChatWindowProps) {
   const { user, selectedChat } = useChatStore();
   const theme = useChatStore((s) => s.theme);
   const [messages, setMessages] = useState<MessageData[]>([]);
@@ -47,6 +47,10 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagingLocked = Boolean(
+    selectedChat && !selectedChat.isGroupChat && selectedChat.canMessage === false
+  );
+  const getSocketInstance = useCallback(() => socketRef?.current ?? null, [socketRef]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -73,6 +77,7 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
     if (!selectedChat || !user) return;
 
     try {
+      const socket = getSocketInstance();
       const res = await fetch("/api/message/read", {
         method: "PUT",
         headers: {
@@ -107,7 +112,7 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
     } catch (error) {
       console.error("Mark as read error:", error);
     }
-  }, [selectedChat, user, socket, onRefreshChats]);
+  }, [selectedChat, user, getSocketInstance, onRefreshChats]);
 
   // Keep a ref to avoid stale closures in socket listeners
   const markMessagesAsReadRef = useRef(markMessagesAsRead);
@@ -125,10 +130,11 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
 
   // Ensure sender is in the chat room to receive delivery/read updates
   useEffect(() => {
+    const socket = getSocketInstance();
     if (socket && selectedChat) {
       socket.emit("join-chat", selectedChat._id);
     }
-  }, [socket, selectedChat]);
+  }, [getSocketInstance, selectedChat]);
 
   // Mark as read when messages load or chat changes
   useEffect(() => {
@@ -141,8 +147,16 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    if (messagingLocked) {
+      if (showEmoji) setShowEmoji(false);
+      if (typing) setTyping(false);
+    }
+  }, [messagingLocked, showEmoji, typing]);
+
   // Socket listeners — use refs for callbacks to keep this effect stable
   useEffect(() => {
+    const socket = getSocketInstance();
     if (!socket) return;
 
     const handleMessageReceived = (newMsg: MessageData) => {
@@ -208,12 +222,18 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
       socket.off("typing", handleTyping);
       socket.off("stop-typing", handleStopTyping);
     };
-  }, [socket, selectedChat]);
+  }, [getSocketInstance, selectedChat]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((!newMessage.trim() && !selectedFile) || !user || !selectedChat) return;
 
+    if (messagingLocked) {
+      toast.error("Friend request pending acceptance");
+      return;
+    }
+
+    const socket = getSocketInstance();
     socket?.emit("stop-typing", selectedChat._id);
 
     // If there's a file, upload it first
@@ -287,7 +307,12 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
 
   const handleSendFile = async () => {
     if (!selectedFile || !user || !selectedChat) return;
+    if (messagingLocked) {
+      toast.error("Friend request pending acceptance");
+      return;
+    }
 
+    const socket = getSocketInstance();
     setUploadingFile(true);
     try {
       // Upload file to Cloudinary
@@ -345,8 +370,10 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
   };
 
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (messagingLocked) return;
     setNewMessage(e.target.value);
 
+    const socket = getSocketInstance();
     if (!socket || !selectedChat) return;
 
     if (!typing) {
@@ -488,6 +515,12 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
         </div>
       </div>
 
+      {messagingLocked && (
+        <div className="px-4 py-2 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200 text-xs text-center border-b border-amber-100 dark:border-amber-800">
+          Messaging is disabled until your friend accepts the request.
+        </div>
+      )}
+
       {/* Messages */}
       <div
         className="flex-1 overflow-y-auto px-4 py-3"
@@ -628,7 +661,7 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
       </div>
 
       {/* Emoji Picker */}
-      {showEmoji && (
+      {!messagingLocked && showEmoji && (
         <div className="px-4 pb-2">
           <EmojiPicker onEmojiClick={onEmojiClick} width="100%" height={300} />
         </div>
@@ -669,15 +702,16 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
           <button
             type="button"
             onClick={() => setShowEmoji(!showEmoji)}
-            className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            disabled={messagingLocked}
+            className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <FiSmile size={22} className={showEmoji ? "text-purple-500" : "text-gray-500 dark:text-gray-400"} />
           </button>
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            disabled={uploadingFile}
+            className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={uploadingFile || messagingLocked}
           >
             <FiPaperclip size={22} className="text-gray-500 dark:text-gray-400" />
           </button>
@@ -687,17 +721,25 @@ export default function ChatWindow({ socket, onBack, isMobile, onRefreshChats }:
             className="hidden"
             accept="image/*,video/mp4,video/webm,video/quicktime,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
             onChange={handleFileSelect}
+            disabled={messagingLocked}
           />
           <input
             type="text"
-            placeholder={selectedFile ? "Add a caption..." : "Type a message..."}
+            placeholder={
+              messagingLocked
+                ? "Messaging locked until you are friends"
+                : selectedFile
+                ? "Add a caption..."
+                : "Type a message..."
+            }
             value={newMessage}
             onChange={handleTyping}
-            className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-full text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-600 focus:bg-white dark:focus:bg-gray-700 transition-all"
+            disabled={messagingLocked}
+            className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-full text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-600 focus:bg-white dark:focus:bg-gray-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           />
           <button
             type="submit"
-            disabled={(!newMessage.trim() && !selectedFile) || uploadingFile}
+            disabled={messagingLocked || (!newMessage.trim() && !selectedFile) || uploadingFile}
             className="p-2.5 rounded-full bg-purple-500 text-white hover:bg-purple-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-purple-300"
           >
             {uploadingFile ? (
