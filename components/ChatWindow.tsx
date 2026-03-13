@@ -32,6 +32,8 @@ interface ChatWindowProps {
 export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats }: ChatWindowProps) {
   const { user, selectedChat } = useChatStore();
   const theme = useChatStore((s) => s.theme);
+  const selectedChatId = selectedChat?._id;
+  const authToken = user?.token;
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -59,11 +61,11 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
   };
 
   const fetchMessages = useCallback(async () => {
-    if (!selectedChat || !user) return;
+    if (!selectedChatId || !authToken) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/message?chatId=${selectedChat._id}`, {
-        headers: { Authorization: `Bearer ${user.token}` },
+      const res = await fetch(`/api/message?chatId=${selectedChatId}`, {
+        headers: { Authorization: `Bearer ${authToken}` },
       });
       const data = await res.json();
       if (res.ok) setMessages(data);
@@ -72,7 +74,7 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
     } finally {
       setLoading(false);
     }
-  }, [selectedChat, user]);
+  }, [selectedChatId, authToken]);
 
   // Mark messages as read when chat is opened or new messages arrive
   const markMessagesAsRead = useCallback(async () => {

@@ -17,6 +17,7 @@ export default function ChatPage() {
   const socketRef = useRef<Socket | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
+  const mobileBackTrapRef = useRef(false);
   const selectedChatRef = useRef<ChatData | null>(null);
 
   // Keep ref in sync
@@ -41,7 +42,25 @@ export default function ChatPage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Show sidebar when no chat selected on mobile
+  // Mobile hardware back handling — ensure back shows sidebar instead of exiting the app
+  useEffect(() => {
+    if (!isMobileView || showSidebar) return;
+    if (typeof window === "undefined") return;
+
+    const handlePopState = () => {
+      mobileBackTrapRef.current = false;
+      setShowSidebar(true);
+    };
+
+    mobileBackTrapRef.current = true;
+    window.history.pushState({ chatOverlay: true }, "", window.location.href);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      mobileBackTrapRef.current = false;
+    };
+  }, [isMobileView, showSidebar]);
 
   const fetchChats = useCallback(async () => {
     if (!user) return;
@@ -159,6 +178,16 @@ export default function ChatPage() {
     setNotifications(updatedNotifications);
   };
 
+  const handleMobileBackNavigation = useCallback(() => {
+    if (isMobileView && !showSidebar) {
+      if (mobileBackTrapRef.current && typeof window !== "undefined") {
+        window.history.back();
+        return;
+      }
+    }
+    setShowSidebar(true);
+  }, [isMobileView, showSidebar]);
+
   const shouldShowSidebar = !isMobileView || showSidebar || !selectedChat;
   const shouldShowChatArea = !isMobileView || !shouldShowSidebar;
 
@@ -180,9 +209,7 @@ export default function ChatPage() {
           {selectedChat ? (
             <ChatWindow
               socketRef={socketRef}
-              onBack={() => {
-                if (isMobileView) setShowSidebar(true);
-              }}
+              onBack={handleMobileBackNavigation}
               isMobile={isMobileView}
               onRefreshChats={fetchChats}
             />
