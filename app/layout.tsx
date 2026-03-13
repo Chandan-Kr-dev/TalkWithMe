@@ -44,9 +44,17 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${caveat.variable} font-sans antialiased`}>
         <ThemeProvider>
-          <div className="min-h-screen flex flex-col">
-            <main className="flex-1 pb-20">{children}</main>
-            <footer className="fixed inset-x-0 bottom-0 border-t border-(--border) bg-(--surface) text-base text-center text-foreground py-4 px-4">
+          <div
+            className="min-h-screen flex flex-col"
+            style={{ "--footer-height": "72px" } as React.CSSProperties}
+          >
+            <main
+              className="flex-1"
+              style={{ minHeight: "calc(100vh - var(--footer-height))" }}
+            >
+              {children}
+            </main>
+            <footer className="sticky bottom-0 mt-auto h-(--footer-height) border-t border-(--border) bg-(--surface) text-base text-center text-foreground flex items-center justify-center px-4">
               <span className={`font-semibold text-lg text-(--accent-strong) ${caveat.className}`}>
                 Made with love by Chandan Kr
               </span>

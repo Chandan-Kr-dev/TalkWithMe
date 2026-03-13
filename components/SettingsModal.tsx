@@ -12,6 +12,8 @@ import {
   FiChevronRight,
   FiShield,
   FiInfo,
+  FiMonitor,
+  FiSmartphone,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 
@@ -32,6 +34,16 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const desktopDownloadUrl = process.env.NEXT_PUBLIC_DESKTOP_DOWNLOAD_URL;
+  const androidDownloadUrl = process.env.NEXT_PUBLIC_ANDROID_DOWNLOAD_URL;
+
+  const handleDownload = (url: string | undefined, label: string) => {
+    if (!url) {
+      toast.error(`${label} download link is not configured`);
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
   const handleChangePassword = async () => {
     if (!currentPassword) {
@@ -174,6 +186,58 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 size={18}
                 className="text-gray-400 dark:text-gray-500"
               />
+            </button>
+
+            {/* Desktop download */}
+            <button
+              onClick={() => handleDownload(desktopDownloadUrl, "Desktop app")}
+              className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
+                  <FiMonitor
+                    size={18}
+                    className="text-indigo-600 dark:text-indigo-400"
+                  />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                    Desktop App
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Download the latest release
+                  </p>
+                </div>
+              </div>
+              <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-500 text-white">
+                Download
+              </span>
+            </button>
+
+            {/* Android download */}
+            <button
+              onClick={() => handleDownload(androidDownloadUrl, "Android app")}
+              className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                  <FiSmartphone
+                    size={18}
+                    className="text-emerald-600 dark:text-emerald-400"
+                  />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                    Android App
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Grab the APK build
+                  </p>
+                </div>
+              </div>
+              <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500 text-white">
+                Download
+              </span>
             </button>
 
             {/* Privacy */}
