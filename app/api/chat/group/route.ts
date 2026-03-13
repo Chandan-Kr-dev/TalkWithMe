@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PUT /api/chat/group - Rename group / Update group
+// PUT /api/chat/group - Update group metadata (name, avatar, admin)
 export async function PUT(req: NextRequest) {
   try {
     const user = await getAuthUser(req);
@@ -52,21 +52,47 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ message: "Not authorized" }, { status: 401 });
     }
 
-    const { chatId, chatName } = await req.json();
+    const { chatId, chatName, groupAvatar, newAdminId } = await req.json();
+
+    if (!chatId) {
+      return NextResponse.json({ message: "chatId is required" }, { status: 400 });
+    }
 
     await connectDB();
 
-    const updatedChat = await Chat.findByIdAndUpdate(
-      chatId,
-      { chatName },
-      { new: true }
-    )
-      .populate("users", "-password")
-      .populate("groupAdmin", "-password");
-
-    if (!updatedChat) {
+    const chat = await Chat.findById(chatId);
+    if (!chat) {
       return NextResponse.json({ message: "Chat not found" }, { status: 404 });
     }
+
+    const isAdmin = chat.groupAdmin?.toString() === user._id.toString();
+
+    if (!isAdmin) {
+      return NextResponse.json({ message: "Only admin can update the group" }, { status: 403 });
+    }
+
+    const updatePayload: Record<string, unknown> = {};
+
+    if (chatName) updatePayload.chatName = chatName;
+    if (groupAvatar) updatePayload.groupAvatar = groupAvatar;
+
+    if (newAdminId) {
+      const isMember = chat.users.some((u: { toString: () => string }) => u.toString() === newAdminId);
+      if (!isMember) {
+        return NextResponse.json({ message: "New admin must be a group member" }, { status: 400 });
+      }
+      updatePayload.groupAdmin = newAdminId;
+    }
+
+    if (Object.keys(updatePayload).length === 0) {
+      return NextResponse.json({ message: "No changes provided" }, { status: 400 });
+    }
+
+    const updatedChat = await Chat.findByIdAndUpdate(chatId, updatePayload, {
+      new: true,
+    })
+      .populate("users", "-password")
+      .populate("groupAdmin", "-password");
 
     return NextResponse.json(updatedChat);
   } catch (error) {

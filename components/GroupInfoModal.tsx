@@ -1,8 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import type React from "react";
+import { useState, useRef } from "react";
 import { useChatStore, ChatData, ChatUser } from "@/store/chatStore";
-import { FiX, FiSearch, FiUserPlus, FiUserMinus, FiEdit2 } from "react-icons/fi";
+import {
+  FiX,
+  FiSearch,
+  FiUserPlus,
+  FiUserMinus,
+  FiEdit2,
+  FiCamera,
+  FiUserCheck,
+} from "react-icons/fi";
 import toast from "react-hot-toast";
 
 interface GroupInfoModalProps {
@@ -13,17 +22,19 @@ interface GroupInfoModalProps {
 
 export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupInfoModalProps) {
   const { user } = useChatStore();
+  const setSelectedChat = useChatStore((s) => s.setSelectedChat);
   const [isEditing, setIsEditing] = useState(false);
   const [groupName, setGroupName] = useState(chat.chatName);
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState<ChatUser[]>([]);
   const [showAddUser, setShowAddUser] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [promotingId, setPromotingId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const isAdmin = chat.groupAdmin?._id === user?._id;
 
-  const handleRename = async () => {
-    if (!groupName.trim()) return;
-
+  const updateGroup = async (payload: Record<string, unknown>) => {
     try {
       const res = await fetch("/api/chat/group", {
         method: "PUT",
@@ -31,16 +42,67 @@ export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupI
           "Content-Type": "application/json",
           Authorization: `Bearer ${user?.token}`,
         },
-        body: JSON.stringify({ chatId: chat._id, chatName: groupName }),
+        body: JSON.stringify({ chatId: chat._id, ...payload }),
       });
 
-      if (res.ok) {
-        toast.success("Group renamed");
-        onRefreshChats();
-        setIsEditing(false);
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.message || "Update failed");
+        return null;
+      }
+      // Keep selected chat in sync with latest server data
+      setSelectedChat(data);
+      onRefreshChats();
+      return data as ChatData;
+    } catch (error) {
+      console.error("Group update error", error);
+      toast.error("Failed to update group");
+      return null;
+    }
+  };
+
+  const handleRename = async () => {
+    if (!groupName.trim()) return;
+    const updated = await updateGroup({ chatName: groupName.trim() });
+    if (updated) {
+      toast.success("Group renamed");
+      setIsEditing(false);
+    }
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("avatar", file);
+    formData.append("type", "avatar");
+
+    setUploadingAvatar(true);
+    try {
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) {
+        toast.error(uploadData.message || "Upload failed");
+        return;
+      }
+
+      const updated = await updateGroup({ groupAvatar: uploadData.url });
+      if (updated) {
+        toast.success("Group photo updated");
       }
     } catch {
-      toast.error("Failed to rename");
+      toast.error("Failed to update photo");
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -111,6 +173,15 @@ export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupI
     }
   };
 
+  const handleMakeAdmin = async (userId: string) => {
+    setPromotingId(userId);
+    const updated = await updateGroup({ newAdminId: userId });
+    if (updated) {
+      toast.success("Admin updated");
+    }
+    setPromotingId(null);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md shadow-2xl max-h-[80vh] overflow-y-auto">
@@ -130,6 +201,24 @@ export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupI
               alt={chat.chatName}
               className="w-20 h-20 rounded-full"
             />
+            {isAdmin && (
+              <div className="flex flex-col items-center gap-2">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-200 flex items-center gap-2 hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50"
+                >
+                  <FiCamera size={14} /> {uploadingAvatar ? "Uploading..." : "Change photo"}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
+              </div>
+            )}
             {isEditing ? (
               <div className="flex items-center gap-2 w-full">
                 <input
@@ -226,12 +315,25 @@ export default function GroupInfoModal({ chat, onClose, onRefreshChats }: GroupI
                     )}
                   </div>
                   {isAdmin && member._id !== user?._id && (
-                    <button
-                      onClick={() => handleRemoveUser(member._id)}
-                      className="p-1.5 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                      <FiUserMinus size={16} />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      {member._id !== chat.groupAdmin?._id && (
+                        <button
+                          onClick={() => handleMakeAdmin(member._id)}
+                          disabled={promotingId === member._id}
+                          className="p-1.5 rounded-full hover:bg-purple-50 dark:hover:bg-purple-900/40 text-gray-400 hover:text-purple-500 transition-colors disabled:opacity-50"
+                          title="Make admin"
+                        >
+                          <FiUserCheck size={16} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleRemoveUser(member._id)}
+                        className="p-1.5 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                        title="Remove member"
+                      >
+                        <FiUserMinus size={16} />
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}
