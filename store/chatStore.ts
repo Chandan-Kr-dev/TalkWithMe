@@ -91,7 +91,7 @@ export const useChatStore = create<ChatStore>()(
       chats: [],
       notifications: [],
       onlineUsers: [],
-      theme: "light" as Theme,
+      theme: "dark" as Theme,
       _hasHydrated: false,
       setUser: (user) => set({ user }),
       setSelectedChat: (selectedChat) => set({ selectedChat }),

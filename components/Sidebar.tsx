@@ -252,14 +252,14 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
 
   return (
     <>
-      <div className="w-full md:w-95 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full">
+      <div className="w-full md:w-95 bg-[#fff4f4] dark:bg-[#0f0607] border-r border-red-100/60 dark:border-red-900/40 flex flex-col h-full">
         {/* Header */}
-        <div className="px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
+        <div className="px-4 py-3 bg-[#fff0f0] dark:bg-[#140808] border-b border-red-100 dark:border-red-900/40">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowProfile(true)}
-                className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-purple-200 hover:ring-purple-400 transition-all"
+                className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-red-200 hover:ring-purple-400 transition-all"
               >
                 <img
                   src={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=default`}
@@ -322,15 +322,15 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
           </div>
 
           {/* Search */}
-          <div className="relative">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={16} />
-            <input
-              type="text"
-              placeholder="Search by username..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-10 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-600 focus:bg-white dark:focus:bg-gray-700 transition-all"
-            />
+            <div className="relative">
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-red-400 dark:text-red-500" size={16} />
+              <input
+                type="text"
+                placeholder="Search by username..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-10 py-2.5 bg-[#ffe5e5] dark:bg-[#1b0a0b] rounded-xl text-sm text-red-900 dark:text-red-100 placeholder-red-400/70 dark:placeholder-red-200/40 focus:outline-none focus:ring-2 focus:ring-red-400 dark:focus:ring-red-600 focus:bg-white dark:focus:bg-[#1f0c0d] transition-all"
+              />
             {search && (
               <button
                 onClick={() => {
@@ -373,7 +373,7 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{req.name}</p>
-                      <p className="text-xs text-purple-500">@{req.username}</p>
+                      <p className="text-xs text-red-400">@{req.username}</p>
                     </div>
                     <div className="flex items-center gap-1">
                       <button
@@ -404,7 +404,7 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                       onSelectChat(notif.chat);
                       setShowNotifications(false);
                     }}
-                    className="w-full text-left px-3 py-2 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
+                    className="w-full text-left px-3 py-2 hover:bg-rose-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                   >
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
                       {notif.chat.isGroupChat
@@ -434,7 +434,7 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
               searchResults.map((result) => (
                 <div
                   key={result._id}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-xl transition-all"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-rose-50 dark:hover:bg-red-900/30 rounded-xl transition-all"
                 >
                   <img
                     src={result.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${result.username}`}
@@ -443,14 +443,14 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                   />
                   <div className="text-left flex-1 min-w-0">
                     <p className="font-medium text-gray-800 dark:text-gray-100 text-sm truncate">{result.name}</p>
-                    <p className="text-xs text-purple-500 font-medium">@{result.username}</p>
+                    <p className="text-xs text-red-400 font-medium">@{result.username}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{result.email}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-2">
                     {result.relationshipStatus === "friends" && (
                       <button
                         onClick={() => handleAccessChat(result._id)}
-                        className="px-3 py-1.5 rounded-full bg-purple-500 text-white text-xs font-semibold hover:bg-purple-600"
+                        className="px-3 py-1.5 rounded-full bg-red-600 text-white text-xs font-semibold hover:bg-red-700"
                       >
                         Message
                       </button>
@@ -458,7 +458,7 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                     {result.relationshipStatus === "none" && (
                       <button
                         onClick={() => handleSendFriendRequest(result.username, result._id)}
-                        className="px-3 py-1.5 rounded-full border border-purple-400 text-purple-600 dark:text-purple-300 text-xs font-semibold hover:bg-purple-50 dark:hover:bg-purple-900/40 flex items-center gap-1"
+                        className="px-3 py-1.5 rounded-full border border-red-400 text-red-600 dark:text-red-300 text-xs font-semibold hover:bg-rose-50 dark:hover:bg-purple-900/40 flex items-center gap-1"
                       >
                         <FiUserPlus size={14} />
                         Request
@@ -511,7 +511,7 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                   key={chat._id}
                   onClick={() => onSelectChat(chat)}
                   className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all border-b border-gray-50 dark:border-gray-800 ${
-                    selectedChat?._id === chat._id ? "bg-purple-50 dark:bg-purple-900/30 border-l-4 border-l-purple-500" : ""
+                    selectedChat?._id === chat._id ? "bg-rose-50 dark:bg-red-900/30 border-l-4 border-l-red-600" : ""
                   }`}
                 >
                   <div className="relative">
@@ -524,7 +524,7 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                       <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full" />
                     )}
                     {chat.isGroupChat && (
-                      <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                      <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-red-600 rounded-full flex items-center justify-center">
                         <FiUsers size={10} className="text-white" />
                       </span>
                     )}
@@ -570,7 +570,7 @@ export default function Sidebar({ onSelectChat, onRefreshChats }: SidebarProps) 
                         )}
                       </p>
                       {notifCount > 0 && (
-                        <span className="ml-2 shrink-0 w-5 h-5 bg-purple-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                        <span className="ml-2 shrink-0 w-5 h-5 bg-red-600 text-white text-xs rounded-full flex items-center justify-center font-bold">
                           {notifCount}
                         </span>
                       )}

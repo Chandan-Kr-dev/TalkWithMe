@@ -207,7 +207,7 @@ export default function ChatPage() {
   const shouldShowChatArea = !isMobileView || !shouldShowSidebar;
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-950 overflow-hidden">
+    <div className="flex h-screen bg-rose-50 dark:bg-[#050304] overflow-hidden">
       <Toaster position="top-center" />
 
       {/* Sidebar */}

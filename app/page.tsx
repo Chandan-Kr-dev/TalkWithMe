@@ -224,9 +224,15 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-4">
-      <Toaster position="top-center" />
-      <div className="w-full max-w-md">
+    <div className="relative min-h-screen overflow-hidden bg-linear-to-br from-[#050101] via-[#140202] to-[#3b0505]">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 -right-16 w-[26rem] h-[26rem] rounded-full bg-red-900/40 blur-3xl" />
+        <div className="absolute bottom-[-6rem] left-[-4rem] w-[30rem] h-[30rem] rounded-full bg-[#5c0f0f]/50 blur-3xl" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-72 h-72 rounded-[4rem] bg-gradient-to-br from-[#8b1111]/40 to-[#400505]/60 blur-2xl rotate-6" />
+      </div>
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+        <Toaster position="top-center" />
+        <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/10 backdrop-blur-sm mb-4 p-3 shadow-lg border border-white/10 overflow-hidden">
@@ -245,12 +251,12 @@ export default function AuthPage() {
 
         {/* Auth Card */}
         {showForgotPassword ? (
-          <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 text-center">
-            <div className="w-20 h-20 rounded-full bg-pink-500/20 flex items-center justify-center mx-auto mb-4">
-              <FiKey size={36} className="text-pink-300" />
+          <div className="bg-linear-to-br from-[#1a0505] to-[#2f0707] backdrop-blur-xl rounded-3xl p-8 shadow-[0_25px_70px_rgba(0,0,0,0.55)] border border-red-900/40 text-center text-white">
+            <div className="w-20 h-20 rounded-full bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+              <FiKey size={36} className="text-red-200" />
             </div>
             <h2 className="text-xl font-bold text-white mb-2">Forgot Password?</h2>
-            <p className="text-white/60 text-sm mb-6">
+            <p className="text-red-100/80 text-sm mb-6">
               Enter your email and we&apos;ll send you a code to reset your password.
             </p>
 
@@ -259,13 +265,13 @@ export default function AuthPage() {
                 type="email"
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 rounded-xl bg-black/30 border border-red-900/60 text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all"
                 placeholder="Enter your email"
               />
               <button
                 onClick={handleForgotPassword}
                 disabled={loading}
-                className="w-full py-3 rounded-xl bg-linear-to-r from-purple-500 to-pink-500 text-white font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg disabled:opacity-50"
+                className="w-full py-3 rounded-xl bg-linear-to-r from-red-600 to-red-800 text-white font-semibold hover:from-red-700 hover:to-rose-800 transition-all duration-300 shadow-lg disabled:opacity-50"
               >
                 {loading ? "Sending..." : "Send Reset Code"}
               </button>
@@ -274,23 +280,23 @@ export default function AuthPage() {
                   setShowForgotPassword(false);
                   setForgotEmail("");
                 }}
-                className="text-white/50 text-sm hover:text-white/80 transition-colors"
+                className="text-red-200 text-sm hover:text-white transition-colors"
               >
                 ← Back to Login
               </button>
             </div>
           </div>
         ) : showResetOtp ? (
-          <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 text-center">
-            <div className="w-20 h-20 rounded-full bg-pink-500/20 flex items-center justify-center mx-auto mb-4">
-              <FiKey size={36} className="text-pink-300" />
+          <div className="bg-linear-to-br from-[#1a0505] to-[#310808] backdrop-blur-xl rounded-3xl p-8 shadow-[0_25px_70px_rgba(0,0,0,0.55)] border border-red-900/40 text-center text-white">
+            <div className="w-20 h-20 rounded-full bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+              <FiKey size={36} className="text-red-200" />
             </div>
             <h2 className="text-xl font-bold text-white mb-2">Reset Password</h2>
-            <p className="text-white/60 text-sm mb-1">
+            <p className="text-red-100/80 text-sm mb-1">
               Enter the 6-digit code sent to
             </p>
-            <p className="text-purple-300 font-semibold text-sm mb-1">{forgotEmail}</p>
-            <p className="text-yellow-300/80 text-xs mb-6">📬 Don&apos;t see it? Check your spam or junk folder</p>
+            <p className="text-red-200 font-semibold text-sm mb-1">{forgotEmail}</p>
+            <p className="text-amber-200 text-xs mb-6">📬 Don&apos;t see it? Check your spam or junk folder</p>
 
             {/* OTP Input */}
             <div className="flex justify-center gap-1.5 sm:gap-2 mb-6">
@@ -322,7 +328,7 @@ export default function AuthPage() {
                       resetOtpRefs.current[5]?.focus();
                     }
                   }}
-                  className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all"
+                  className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold rounded-xl bg-black/30 border border-red-900/60 text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all"
                 />
               ))}
             </div>
@@ -330,32 +336,32 @@ export default function AuthPage() {
             {/* New Password */}
             <div className="space-y-3 text-left mb-6">
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-1.5">New Password</label>
+                <label className="block text-sm font-medium text-red-100/80 mb-1.5">New Password</label>
                 <div className="relative">
                   <input
                     type={showNewPassword ? "text" : "password"}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all pr-12"
+                    className="w-full px-4 py-3 rounded-xl bg-black/30 border border-red-900/60 text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all pr-12"
                     placeholder="Enter new password"
                     minLength={6}
                   />
                   <button
                     type="button"
                     onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-red-300 hover:text-red-100 transition-colors"
                   >
                     {showNewPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
                   </button>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-1.5">Confirm New Password</label>
+                <label className="block text-sm font-medium text-red-100/80 mb-1.5">Confirm New Password</label>
                 <input
                   type="password"
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-black/30 border border-red-900/60 text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all"
                   placeholder="Confirm new password"
                   minLength={6}
                 />
@@ -366,7 +372,7 @@ export default function AuthPage() {
               <button
                 onClick={handleResetPassword}
                 disabled={verifying}
-                className="w-full py-3 rounded-xl bg-linear-to-r from-purple-500 to-pink-500 text-white font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg disabled:opacity-50"
+                className="w-full py-3 rounded-xl bg-linear-to-r from-red-600 to-red-800 text-white font-semibold hover:from-red-700 hover:to-rose-800 transition-all duration-300 shadow-lg disabled:opacity-50"
               >
                 {verifying ? "Resetting..." : "Reset Password"}
               </button>
@@ -394,7 +400,7 @@ export default function AuthPage() {
                   }
                 }}
                 disabled={loading}
-                className="w-full py-3 rounded-xl bg-white/10 border border-white/20 text-white font-medium hover:bg-white/20 transition-all duration-300 disabled:opacity-50"
+                className="w-full py-3 rounded-xl bg-black/30 text-red-200 font-semibold border border-red-900/40 hover:bg-black/50 transition-all duration-300 disabled:opacity-50"
               >
                 {loading ? "Sending..." : "Resend Code"}
               </button>
@@ -406,23 +412,23 @@ export default function AuthPage() {
                   setConfirmNewPassword("");
                   setForgotEmail("");
                 }}
-                className="text-white/50 text-sm hover:text-white/80 transition-colors"
+                className="text-red-200 text-sm hover:text-white transition-colors"
               >
                 ← Back to Login
               </button>
             </div>
           </div>
         ) : showOtpScreen ? (
-          <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 text-center">
-            <div className="w-20 h-20 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto mb-4">
-              <FiShield size={36} className="text-purple-300" />
+          <div className="bg-linear-to-br from-[#1a0505] to-[#310808] backdrop-blur-xl rounded-3xl p-8 shadow-[0_25px_70px_rgba(0,0,0,0.55)] border border-red-900/40 text-center text-white">
+            <div className="w-20 h-20 rounded-full bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+              <FiShield size={36} className="text-red-200" />
             </div>
             <h2 className="text-xl font-bold text-white mb-2">Enter verification code</h2>
-            <p className="text-white/60 text-sm mb-1">
+            <p className="text-red-100/80 text-sm mb-1">
               We&apos;ve sent a 6-digit code to
             </p>
-            <p className="text-purple-300 font-semibold text-sm mb-1">{verifyEmail}</p>
-            <p className="text-yellow-300/80 text-xs mb-6">📬 Don&apos;t see it? Check your spam or junk folder</p>
+            <p className="text-red-200 font-semibold text-sm mb-1">{verifyEmail}</p>
+            <p className="text-amber-200 text-xs mb-6">📬 Don&apos;t see it? Check your spam or junk folder</p>
 
             {/* OTP Input Boxes */}
             <div className="flex justify-center gap-1.5 sm:gap-2 mb-6">
@@ -455,12 +461,12 @@ export default function AuthPage() {
                       otpRefs.current[5]?.focus();
                     }
                   }}
-                  className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold rounded-xl bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                  className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold rounded-xl bg-black/30 border border-red-900/60 text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all"
                 />
               ))}
             </div>
 
-            <p className="text-white/40 text-xs mb-6">Code expires in 10 minutes</p>
+            <p className="text-red-200/70 text-xs mb-6">Code expires in 10 minutes</p>
 
             <div className="space-y-3">
               <button
@@ -493,7 +499,7 @@ export default function AuthPage() {
                   }
                 }}
                 disabled={verifying}
-                className="w-full py-3 rounded-xl bg-linear-to-r from-purple-500 to-pink-500 text-white font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 shadow-lg disabled:opacity-50"
+                className="w-full py-3 rounded-xl bg-linear-to-r from-red-600 to-red-800 text-white font-semibold hover:from-red-700 hover:to-rose-800 transition-all duration-300 shadow-lg disabled:opacity-50"
               >
                 {verifying ? "Verifying..." : "Verify Email"}
               </button>
@@ -526,7 +532,7 @@ export default function AuthPage() {
                   }
                 }}
                 disabled={loading}
-                className="w-full py-3 rounded-xl bg-white/10 border border-white/20 text-white font-medium hover:bg-white/20 transition-all duration-300 disabled:opacity-50"
+                className="w-full py-3 rounded-xl bg-black/30 text-red-200 font-semibold border border-red-900/40 hover:bg-black/50 transition-all duration-300 disabled:opacity-50"
               >
                 {loading ? "Sending..." : "Resend OTP"}
               </button>
@@ -535,20 +541,20 @@ export default function AuthPage() {
                   setShowOtpScreen(false);
                   setOtp(["", "", "", "", "", ""]);
                 }}
-                className="text-white/50 text-sm hover:text-white/80 transition-colors"
+                className="text-red-200 text-sm hover:text-white transition-colors"
               >
                 ← Back to Sign Up
               </button>
             </div>
           </div>
         ) : (
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
+        <div className="bg-linear-to-br from-[#1b0303] to-[#2c0505] backdrop-blur-xl rounded-3xl p-8 shadow-[0_25px_70px_rgba(0,0,0,0.55)] border border-red-900/40 text-white">
           {/* Tab Switcher */}
-          <div className="flex bg-white/10 rounded-xl p-1 mb-6">
+          <div className="flex bg-black/30 rounded-xl p-1 mb-6">
             <button
               onClick={() => setIsLogin(true)}
               className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                isLogin ? "bg-white text-purple-900 shadow-lg" : "text-white/70 hover:text-white"
+                isLogin ? "bg-red-900/70 text-white shadow-lg" : "text-white/60 hover:text-white"
               }`}
             >
               Login
@@ -556,7 +562,7 @@ export default function AuthPage() {
             <button
               onClick={() => setIsLogin(false)}
               className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                !isLogin ? "bg-white text-purple-900 shadow-lg" : "text-white/70 hover:text-white"
+                !isLogin ? "bg-red-900/70 text-white shadow-lg" : "text-white/60 hover:text-white"
               }`}
             >
               Sign Up
@@ -573,11 +579,11 @@ export default function AuthPage() {
                       <img
                         src={avatarPreview}
                         alt="Avatar preview"
-                        className="w-20 h-20 rounded-full object-cover ring-2 ring-white/30"
+                        className="w-20 h-20 rounded-full object-cover ring-2 ring-red-500/60"
                       />
                     ) : (
-                      <div className="w-20 h-20 rounded-full bg-white/10 border-2 border-dashed border-white/30 flex items-center justify-center">
-                        <FiCamera size={24} className="text-white/50" />
+                      <div className="w-20 h-20 rounded-full bg-black/30 border-2 border-dashed border-red-900/60 flex items-center justify-center">
+                        <FiCamera size={24} className="text-red-300" />
                       </div>
                     )}
                     <button
@@ -597,7 +603,7 @@ export default function AuthPage() {
                       </button>
                     )}
                   </div>
-                  <p className="text-xs text-white/50 mt-2">Upload avatar (optional)</p>
+                  <p className="text-xs text-white/60 mt-2">Upload avatar (optional)</p>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -613,7 +619,7 @@ export default function AuthPage() {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 rounded-xl bg-black/30 border border-red-900/60 text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all"
                     placeholder="Enter your name"
                     required
                   />
@@ -625,14 +631,14 @@ export default function AuthPage() {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 rounded-xl bg-black/30 border border-red-900/60 text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all"
                     placeholder="Choose a unique username"
                     required
                     minLength={3}
                     maxLength={30}
                     autoComplete="username"
                   />
-                  <p className="text-xs text-white/50 mt-1">Use 3-30 letters, numbers, or underscores.</p>
+                  <p className="text-xs text-white/60 mt-1">Use 3-30 letters, numbers, or underscores.</p>
                 </div>
               </>
             )}
@@ -643,7 +649,7 @@ export default function AuthPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 rounded-xl bg-black/30 border border-red-900/60 text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all"
                 placeholder="Enter your email"
                 required
               />
@@ -656,7 +662,7 @@ export default function AuthPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all pr-12"
+                  className="w-full px-4 py-3 rounded-xl bg-black/30 border border-red-900/60 text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all pr-12"
                   placeholder="Enter your password"
                   required
                   minLength={6}
@@ -664,7 +670,7 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-red-200 hover:text-white transition-colors"
                 >
                   {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
                 </button>
@@ -680,7 +686,7 @@ export default function AuthPage() {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-black/30 border border-red-900/60 text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent transition-all"
                   placeholder="Confirm your password"
                   required
                   minLength={6}
@@ -696,7 +702,7 @@ export default function AuthPage() {
                     setShowForgotPassword(true);
                     setForgotEmail(email);
                   }}
-                  className="text-sm text-purple-300 hover:text-purple-200 transition-colors"
+                  className="text-sm text-red-200 hover:text-white transition-colors"
                 >
                   Forgot Password?
                 </button>
@@ -706,7 +712,7 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-linear-to-r from-purple-500 to-pink-500 text-white font-semibold hover:from-purple-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              className="w-full py-3 rounded-xl bg-linear-to-r from-red-600 to-red-800 text-white font-semibold hover:from-red-700 hover:to-rose-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -728,5 +734,6 @@ export default function AuthPage() {
         )}
       </div>
     </div>
+  </div>
   );
 }

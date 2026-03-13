@@ -70,8 +70,8 @@ export default function FriendProfileModal({ friendUser, onClose }: FriendProfil
           {/* Details cards */}
           <div className="space-y-3 text-left">
             <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/40 rounded-lg">
-                <FiAtSign size={18} className="text-purple-500" />
+              <div className="p-2 bg-rose-100 dark:bg-red-900/40 rounded-lg">
+                <FiAtSign size={18} className="text-red-400" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">Username</p>
@@ -80,8 +80,8 @@ export default function FriendProfileModal({ friendUser, onClose }: FriendProfil
             </div>
             {/* Email */}
             <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/40 rounded-lg">
-                <FiMail size={18} className="text-purple-500" />
+              <div className="p-2 bg-rose-100 dark:bg-red-900/40 rounded-lg">
+                <FiMail size={18} className="text-red-400" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">Email</p>
@@ -108,7 +108,7 @@ export default function FriendProfileModal({ friendUser, onClose }: FriendProfil
           {/* Send Message button */}
           <button
             onClick={onClose}
-            className="w-full flex items-center justify-center gap-2 py-2.5 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-medium transition-colors shadow-lg shadow-purple-200 dark:shadow-purple-900/30"
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors shadow-lg shadow-red-200 dark:shadow-red-900/30"
           >
             <FiMessageCircle size={18} />
             Send Message

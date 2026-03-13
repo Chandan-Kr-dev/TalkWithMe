@@ -121,7 +121,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
               <img
                 src={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=default`}
                 alt="Profile"
-                className="w-24 h-24 rounded-full ring-4 ring-purple-100 dark:ring-purple-900 object-cover"
+                className="w-24 h-24 rounded-full ring-4 ring-red-200 dark:ring-purple-900 object-cover"
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -154,7 +154,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-600"
+                    className="w-full px-3 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-400 dark:focus:ring-red-600"
                   />
                 </div>
                 <div>
@@ -163,14 +163,14 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                     type="text"
                     value={about}
                     onChange={(e) => setAbout(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-600"
+                    className="w-full px-3 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-red-400 dark:focus:ring-red-600"
                   />
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={handleUpdateProfile}
                     disabled={loading}
-                    className="flex-1 py-2.5 rounded-xl bg-purple-500 text-white text-sm font-semibold hover:bg-purple-600 disabled:opacity-50 transition-all"
+                    className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition-all"
                   >
                     {loading ? "Saving..." : "Save"}
                   </button>
@@ -186,7 +186,7 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
               <>
                 <div className="flex items-center gap-2 mb-1">
                   <h4 className="text-xl font-bold text-gray-800 dark:text-gray-100">{user?.name}</h4>
-                  <button onClick={() => setIsEditing(true)} className="text-gray-400 hover:text-purple-500">
+                  <button onClick={() => setIsEditing(true)} className="text-gray-400 hover:text-red-400">
                     <FiEdit2 size={16} />
                   </button>
                 </div>
