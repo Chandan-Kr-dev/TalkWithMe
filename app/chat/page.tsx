@@ -156,14 +156,6 @@ export default function ChatPage() {
     };
   }, []);
 
-  if (!_hasHydrated || !user) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-100 dark:bg-gray-950">
-        <div className="animate-spin rounded-full h-10 w-10 border-3 border-purple-500 border-t-transparent" />
-      </div>
-    );
-  }
-
   const handleSelectChat = (chat: ChatData) => {
     useChatStore.getState().setSelectedChat(chat);
     if (isMobileView) setShowSidebar(false);
@@ -187,6 +179,14 @@ export default function ChatPage() {
     }
     setShowSidebar(true);
   }, [isMobileView, showSidebar]);
+
+  if (!_hasHydrated || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-100 dark:bg-gray-950">
+        <div className="animate-spin rounded-full h-10 w-10 border-3 border-purple-500 border-t-transparent" />
+      </div>
+    );
+  }
 
   const shouldShowSidebar = !isMobileView || showSidebar || !selectedChat;
   const shouldShowChatArea = !isMobileView || !shouldShowSidebar;
