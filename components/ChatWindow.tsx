@@ -47,6 +47,7 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [sending, setSending] = useState(false);
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [deletingChat, setDeletingChat] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -241,7 +242,7 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!newMessage.trim() && !selectedFile) || !user || !selectedChat) return;
+    if (sending || (!newMessage.trim() && !selectedFile) || !user || !selectedChat) return;
 
     if (messagingLocked) {
       toast.error("Friend request pending acceptance");
@@ -256,6 +257,8 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
       await handleSendFile();
       return;
     }
+
+    setSending(true);
 
     try {
       const res = await fetch("/api/message", {
@@ -287,6 +290,9 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
     } catch (error) {
       console.error("Send message error:", error);
       toast.error("Failed to send message");
+    }
+    finally {
+      setSending(false);
     }
   };
 
@@ -875,11 +881,13 @@ export default function ChatWindow({ socketRef, onBack, isMobile, onRefreshChats
           />
           <button
             type="submit"
-            disabled={messagingLocked || (!newMessage.trim() && !selectedFile) || uploadingFile}
+            disabled={messagingLocked || sending || (!newMessage.trim() && !selectedFile) || uploadingFile}
             className="p-2.5 rounded-full bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-red-300"
           >
             {uploadingFile ? (
               <div className="w-4.5 h-4.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : sending ? (
+              <div className="w-4.5 h-4.5 border-2 border-white/80 border-t-transparent rounded-full animate-spin" />
             ) : (
               <FiSend size={18} />
             )}
