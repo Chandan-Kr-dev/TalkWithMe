@@ -8,12 +8,14 @@ const withPWAConfig = withPWA({
 });
 
 const nextConfig = {
+  // Silence Turbopack warning when using a webpack plugin (next-pwa).
+  turbopack: {},
+  transpilePackages: ["next-pwa"],
   images: {
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "api.dicebear.com",
-      },
+      { protocol: "https", hostname: "api.dicebear.com" },
+      { protocol: "https", hostname: "res.cloudinary.com" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
     ],
   },
 };
