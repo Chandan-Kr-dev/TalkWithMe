@@ -5,6 +5,47 @@ import Chat from "@/models/Chat";
 import User from "@/models/User";
 import { getAuthUser } from "@/lib/getAuthUser";
 import { encrypt, decrypt } from "@/lib/encryption";
+import PushSubscription from "@/models/PushSubscription";
+import webPush from "web-push";
+
+const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+const vapidSubject = process.env.VAPID_SUBJECT || "mailto:example@example.com";
+
+if (vapidPublicKey && vapidPrivateKey) {
+  webPush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+}
+
+async function sendPushNotifications(recipientIds: string[], payload: Record<string, unknown>) {
+  if (!vapidPublicKey || !vapidPrivateKey) return;
+
+  const subscriptions = await PushSubscription.find({ user: { $in: recipientIds } });
+  if (!subscriptions.length) return;
+
+  const body = JSON.stringify(payload);
+
+  await Promise.all(
+    subscriptions.map(async (sub) => {
+      try {
+        await webPush.sendNotification(
+          {
+            endpoint: sub.endpoint,
+            expirationTime: sub.expirationTime ? sub.expirationTime.getTime() : undefined,
+            keys: sub.keys as { auth: string; p256dh: string },
+          },
+          body
+        );
+      } catch (err) {
+        const statusCode = (err as { statusCode?: number } | undefined)?.statusCode;
+        if (statusCode === 404 || statusCode === 410) {
+          await PushSubscription.deleteOne({ _id: sub._id });
+        } else {
+          console.error("Web push send error", err);
+        }
+      }
+    })
+  );
+}
 
 // GET /api/message?chatId=xxx - Get all messages for a chat
 export async function GET(req: NextRequest) {
@@ -125,6 +166,19 @@ export async function POST(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const responseMessage = populatedMessage.toObject() as any;
     responseMessage.content = decrypt(responseMessage.content);
+
+    const recipientIds = chat.users
+      .map((id) => id.toString())
+      .filter((id) => id !== authUserId);
+
+    const preview = messageContent.length > 80 ? `${messageContent.slice(0, 77)}...` : messageContent;
+
+    void sendPushNotifications(recipientIds, {
+      title: `New message from ${user.name}`,
+      body: preview,
+      url: `/chat?chatId=${chatId}`,
+      tag: chatId,
+    });
 
     return NextResponse.json(responseMessage, { status: 201 });
   } catch (error) {

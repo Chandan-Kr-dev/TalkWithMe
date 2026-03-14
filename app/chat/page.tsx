@@ -5,6 +5,7 @@ import { Caveat } from "next/font/google";
 import { useRouter } from "next/navigation";
 import { useChatStore, ChatData, MessageData } from "@/store/chatStore";
 import { getSocket, disconnectSocket } from "@/lib/socketClient";
+import { ensurePushSubscription } from "@/lib/pushClient";
 import Sidebar from "@/components/Sidebar";
 import ChatWindow from "@/components/ChatWindow";
 import WelcomeScreen from "@/components/WelcomeScreen";
@@ -22,6 +23,7 @@ export default function ChatPage() {
   const [showSidebar, setShowSidebar] = useState(true);
   const mobileBackTrapRef = useRef(false);
   const selectedChatRef = useRef<ChatData | null>(null);
+  const pushInitRef = useRef(false);
 
   // Keep ref in sync
   useEffect(() => {
@@ -34,6 +36,16 @@ export default function ChatPage() {
       router.push("/");
     }
   }, [user, router, _hasHydrated]);
+
+  // Register web push once per session when user is available
+  useEffect(() => {
+    if (!user || pushInitRef.current) return;
+    pushInitRef.current = true;
+
+    ensurePushSubscription(user.token).catch((err) => {
+      console.error("Push subscription error:", err);
+    });
+  }, [user]);
 
   // Handle responsive
   useEffect(() => {
