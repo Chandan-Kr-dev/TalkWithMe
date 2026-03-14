@@ -209,7 +209,7 @@ CLOUDINARY_API_SECRET=your_api_secret
 # node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 MESSAGE_ENCRYPTION_KEY=your_64_char_hex_key
 
-# Optional
+# Optional 
 PORT=3000
 ```
 
