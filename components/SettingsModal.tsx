@@ -188,7 +188,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               />
             </button>
 
-            {/* Desktop download */}
+            {/* Desktop download
             <button
               onClick={() => handleDownload(desktopDownloadUrl, "Desktop app")}
               className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
@@ -212,7 +212,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
               <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-500 text-white">
                 Download
               </span>
-            </button>
+            </button> */}
 
             {/* Android download */}
             <button
@@ -277,7 +277,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     TalkWithMe
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Version 1.0.0
+                    Version 1.1.0
                   </p>
                 </div>
               </div>
